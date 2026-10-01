@@ -40,7 +40,7 @@ catbud-addons/
 .\gradlew\.bat :projects:magic_tower:26.2:assemble
 ```
 
-`assemble` 會打包全部六種「模組 × 版本」組合，但不會執行測試或啟動客戶端。
+`assemble` 會打包全部六種「模組 × 版本」組合。
 
 `releaseJars` 還會將三個可安裝的 Magic Tower JAR 收集至 `build/releases/`：
 
