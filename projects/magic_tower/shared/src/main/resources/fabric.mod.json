@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "id": "catbud_addons",
+  "version": "${version}",
+  "name": "Catbud Magic Tower",
+  "description": "Client-side Magic Tower radar, ESP, and target lines.",
+  "icon": "assets/catbud_addons/icon.png",
+  "authors": ["Catbud"],
+  "environment": "client",
+  "entrypoints": {
+    "client": ["github.freshchromatic.catbud_addons.magic_tower.CatbudAddonsClient"]
+  },
+  "mixins": ["catbud_addons.mixins.json"],
+  "depends": {
+    "catbud_core": ">=${core_version}",
+    "fabricloader": ">=${loader_version}",
+    "fabric-api": "*",
+    "minecraft": "~${minecraft_version}",
+    "java": ">=${java_version}"
+  }
+}
+

@@ -1,0 +1,30 @@
+plugins {
+    id 'net.fabricmc.fabric-loom' version '1.18-SNAPSHOT' apply false
+    id 'net.fabricmc.fabric-loom-remap' version '1.18-SNAPSHOT' apply false
+}
+allprojects {
+    group = 'github.freshchromatic.catbud-addons'
+    repositories {
+        mavenCentral()
+        maven { url = 'https://maven.terraformersmc.com/' }
+    }
+}
+tasks.register('build') {
+    group = 'build'
+    description = 'Build all modules for every supported Minecraft version.'
+    dependsOn(['catbud_core', 'magic_tower'].collectMany { module ->
+        ['1.21.11', '26.2', '26.3'].collect { mc -> ":projects:${module}:${mc}:build" }
+    })
+}
+tasks.register('assemble') {
+    group = 'build'
+    description = 'Compile and package all versions without running tests.'
+    dependsOn(['catbud_core', 'magic_tower'].collectMany { module ->
+        ['1.21.11', '26.2', '26.3'].collect { mc -> ":projects:${module}:${mc}:assemble" }
+    })
+}
+tasks.register('releaseJars') {
+    group = 'build'
+    description = 'Package installable Core and Magic Tower releases for all versions into out.'
+    dependsOn tasks.named('assemble')
+}

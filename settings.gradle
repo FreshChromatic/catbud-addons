@@ -1,0 +1,14 @@
+pluginManagement {
+    repositories {
+        maven { url = 'https://maven.fabricmc.net/' }
+        gradlePluginPortal()
+    }
+}
+rootProject.name = 'catbud-addons'
+['catbud_core', 'magic_tower'].each { module ->
+    ['1.21.11', '26.2', '26.3'].each { mc ->
+        def path = ":projects:${module}:${mc}"
+        include path
+        project(path).projectDir = file("projects/${module}/versions/${mc}")
+    }
+}

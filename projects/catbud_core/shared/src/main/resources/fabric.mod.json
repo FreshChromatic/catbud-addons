@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "id": "catbud_core",
+  "version": "${version}",
+  "name": "Catbud Core",
+  "description": "Shared client-side settings interface and configuration for Catbud addons.",
+  "icon": "assets/catbud_core/icon.png",
+  "environment": "client",
+  "entrypoints": {
+    "client": ["github.freshchromatic.catbud_addons.catbud_core.CatbudCore"],
+    "modmenu": ["github.freshchromatic.catbud_addons.catbud_core.CatbudModMenuIntegration"]
+  },
+  "depends": { "fabricloader": ">=${loader_version}", "fabric-api": "*", "minecraft": "~${minecraft_version}", "java": ">=${java_version}" },
+  "suggests": { "modmenu": ">=${modmenu_version}" }
+}
+

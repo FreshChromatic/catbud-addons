@@ -1,0 +1,36 @@
+// Preserve the existing opt-in 26.2 verification harness, outside release source sets.
+sourceSets {
+    verification {
+        java.srcDir file('../../shared/src/verification/java')
+        resources.srcDir file('../../shared/src/verification/resources')
+        compileClasspath += sourceSets.main.output + sourceSets.main.compileClasspath
+        runtimeClasspath += sourceSets.main.output + sourceSets.main.runtimeClasspath
+    }
+}
+configurations.verificationImplementation.extendsFrom(configurations.implementation)
+configurations.verificationRuntimeOnly.extendsFrom(configurations.runtimeOnly)
+loom {
+    mods {
+        catbud_addons { sourceSet sourceSets.main }
+        catbud_verification { sourceSet sourceSets.verification }
+    }
+    runs {
+        client {
+            source sourceSets.verification
+            runDir project.hasProperty('verifyLegacy') ? 'build/verification-legacy' : 'build/verification-client'
+            if (project.hasProperty('verifyWorldOnly')) vmArg '-Dcatbud.verify.worldOnly=true'
+            if (project.hasProperty('verifyTooltips')) vmArg '-Dcatbud.verify.tooltipsOnly=true'
+            if (project.hasProperty('verifyLegacy')) vmArg '-Dcatbud.verify.legacy=true'
+        }
+    }
+}
+tasks.named('runClient') { dependsOn tasks.named('verificationClasses') }
+if (project.hasProperty('verifyLegacy')) {
+    tasks.named('runClient') {
+        doFirst {
+            def config = file('build/verification-legacy/config')
+            config.mkdirs()
+            new File(config, 'catbud-addons.json').text = '{"debug":true,"autoPortalRoutes":false}'
+        }
+    }
+}

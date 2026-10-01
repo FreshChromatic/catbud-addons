@@ -1,0 +1,68 @@
+def target = new Properties()
+file('version.properties').withInputStream { target.load(it) }
+ext.minecraft_version = target.getProperty('minecraft_version')
+def legacy = minecraft_version == '1.21.11'
+def module = project.parent.name
+def moduleRoot = file('../..')
+group = "${rootProject.group}.${module}"
+apply plugin: legacy ? 'net.fabricmc.fabric-loom-remap' : 'net.fabricmc.fabric-loom'
+version = module == 'catbud_core' ? project.core_version : project.mod_version
+base { archivesName = "catbud-${module == 'catbud_core' ? 'core' : module}-${minecraft_version}" }
+sourceSets {
+    main {
+        java.srcDirs = [new File(moduleRoot, 'shared/src/main/java'), file('src/main/java')]
+        if (!legacy) java.srcDir new File(moduleRoot, 'shared/src/modern/java')
+        resources.srcDirs = [new File(moduleRoot, 'shared/src/main/resources'), file('src/main/resources')]
+    }
+    test {
+        java.srcDirs = [new File(moduleRoot, 'shared/src/test/java'), file('src/test/java')]
+        resources.srcDirs = [new File(moduleRoot, 'shared/src/test/resources'), file('src/test/resources')]
+    }
+}
+dependencies {
+    minecraft "com.mojang:minecraft:${minecraft_version}"
+    if (legacy) {
+        mappings loom.officialMojangMappings()
+        modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+        modImplementation "net.fabricmc.fabric-api:fabric-api:${target.fabric_api_version}"
+    } else {
+        implementation "net.fabricmc:fabric-loader:${project.loader_version}"
+        implementation "net.fabricmc.fabric-api:fabric-api:${target.fabric_api_version}"
+    }
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.11.4'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    if (module == 'catbud_core') {
+        if (legacy) modImplementation "com.terraformersmc:modmenu:${target.modmenu_version}"
+        else implementation "com.terraformersmc:modmenu:${target.modmenu_version}"
+    } else {
+        def core = project(":projects:catbud_core:${minecraft_version}")
+        if (legacy) implementation project(path: core.path, configuration: 'namedElements')
+        else implementation core
+        include core
+    }
+}
+def javaTarget = legacy ? 21 : 25
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+    options.release = javaTarget
+}
+tasks.withType(Test).configureEach { useJUnitPlatform() }
+java { withSourcesJar() }
+// Only installable releases go to out; source/development archives stay in build.
+// Legacy releases must be remapped first.
+def finalArchives = legacy ? ['remapJar'] : ['jar']
+finalArchives.each { archiveTask ->
+    tasks.named(archiveTask) {
+        destinationDirectory = rootProject.layout.projectDirectory.dir('out')
+    }
+}
+processResources {
+    def values = [version: project.version, core_version: project.core_version,
+                  minecraft_version: minecraft_version, java_version: javaTarget,
+                  loader_version: project.loader_version, modmenu_version: target.modmenu_version]
+    inputs.properties values
+    filesMatching(['fabric.mod.json', 'catbud_addons.mixins.json']) { expand values }
+}
+if (module == 'magic_tower' && minecraft_version == '26.2' && project.hasProperty('verifySettings')) {
+    apply from: rootProject.file('build-logic/settings-verification.gradle')
+}

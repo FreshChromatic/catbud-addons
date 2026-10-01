@@ -1,0 +1,14 @@
+{
+  "required": true,
+  "package": "github.freshchromatic.catbud_addons.magic_tower.mixin",
+  "compatibilityLevel": "JAVA_${java_version}",
+  "client": [
+    "BossOverlayAccessor",
+    "ClientPacketListenerMixin",
+    "ClientLevelMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
+
