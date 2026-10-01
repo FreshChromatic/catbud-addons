@@ -35,9 +35,9 @@ catbud-addons/
 ## 編譯與打包
 
 ```powershell
-.\gradlew\.bat assemble
-.\gradlew\.bat releaseJars
-.\gradlew\.bat :projects:magic_tower:26.2:assemble
+.\gradlew.bat assemble
+.\gradlew.bat releaseJars
+.\gradlew.bat :projects:magic_tower:26.2:assemble
 ```
 
 `assemble` 會打包全部六種「模組 × 版本」組合。
