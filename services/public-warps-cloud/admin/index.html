@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>公共傳點管理</title>
+    <link rel="stylesheet" href="/style.css" />
+    <script type="module" src="/app.mjs"></script>
+  </head>
+  <body>
+    <header>
+      <div>
+        <small>Catbud · Catrealm</small>
+        <h1>公共傳點管理</h1>
+      </div>
+      <div class="header-tools">
+        <div class="toolbar">
+          <label
+            >伺服器
+            <select id="server">
+              <option value="catbud">貓芽</option>
+              <option value="catrealm">貓域</option>
+            </select></label
+          >
+          <button id="refresh">重新整理</button>
+        </div>
+        <span id="identity">正在確認登入…</span>
+      </div>
+    </header>
+    <nav aria-label="管理分類">
+      <button data-page="submissions" aria-current="page">待審核</button
+      ><button data-page="warps">已發布</button><button data-page="contributors">投稿者</button
+      ><button data-page="audit">操作紀錄</button><button data-page="status">服務狀態</button>
+    </nav>
+    <p id="message" role="status" aria-live="polite"></p>
+    <main>
+      <section class="list-pane">
+        <h2 id="list-title">待審核</h2>
+        <input
+          id="search"
+          type="search"
+          maxlength="120"
+          placeholder="搜尋玩家、名稱或用途"
+          aria-label="搜尋管理清單"
+        />
+        <p id="list-count" class="muted"></p>
+        <div id="items"></div>
+        <div class="pagination">
+          <button id="previous" hidden>上一頁</button><button id="more" hidden>下一頁</button>
+        </div>
+        <button id="grant" hidden>新增投稿者</button>
+      </section>
+      <section id="detail" aria-label="資料詳情">
+        <p class="empty">選取一筆資料查看詳情。</p>
+      </section>
+    </main>
+    <dialog id="confirm">
+      <form method="dialog">
+        <h2 id="confirm-title">確認操作</h2>
+        <p id="confirm-description"></p>
+        <div class="actions">
+          <button value="cancel">取消</button><button value="continue" class="danger">確認</button>
+        </div>
+      </form>
+    </dialog>
+  </body>
+</html>

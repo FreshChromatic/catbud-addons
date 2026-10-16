@@ -3,9 +3,11 @@ package github.freshchromatic.catbud_addons.magic_tower;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import net.minecraft.world.phys.Vec3;
+
 import org.junit.jupiter.api.Test;
 
 class RadarDirectionTest {
+
     @Test
     void targetOnPlayersRightHasPositiveScreenOffset() {
         // At yaw 0 the player faces +Z, so -X is on the player's right.

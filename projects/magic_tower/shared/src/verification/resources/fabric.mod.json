@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "id": "catbud_verification",
-  "version": "1.0.0",
+  "version": "1.0.3",
   "name": "Catbud Settings Verification",
   "environment": "client",
   "entrypoints": {"client": ["github.freshchromatic.catbud_addons.magic_tower.SettingsVerificationClient"]},

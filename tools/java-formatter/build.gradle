@@ -1,0 +1,43 @@
+plugins {
+    id 'java'
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'org.eclipse.jdt:org.eclipse.jdt.core:3.43.0'
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.11.4'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+    options.release = 25
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+    inputs.file('../java-format.properties')
+}
+
+def workspace = projectDir.parentFile.parentFile
+tasks.register('formatJava', JavaExec) {
+    group = 'formatting'
+    description = 'Format project Java sources using the SunLight-inspired project profile.'
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'github.freshchromatic.catbud_addons.formatting.JavaFormatter'
+    args new File(workspace, 'tools/java-format.properties').absolutePath
+    if (project.hasProperty('checkFormat')) {
+        args '--check'
+    }
+    def sources = fileTree(new File(workspace, 'projects')) {
+        include '**/*.java'
+        exclude '**/build/**', '**/references/**'
+    } + fileTree(new File(workspace, 'tools')) {
+        include '**/*.java'
+        exclude '**/build/**'
+    }
+    args sources.files.sort { it.absolutePath }.collect { it.absolutePath }
+}

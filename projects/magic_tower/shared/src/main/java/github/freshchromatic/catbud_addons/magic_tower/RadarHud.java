@@ -1,32 +1,44 @@
 package github.freshchromatic.catbud_addons.magic_tower;
 
 import github.freshchromatic.catbud_addons.catbud_core.ClientPlatform;
+import github.freshchromatic.catbud_addons.catbud_core.HudGraphics;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
-import github.freshchromatic.catbud_addons.catbud_core.HudGraphics;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.phys.Vec3;
 
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+
 final class RadarHud {
-    private static final Identifier ARROW = Identifier.fromNamespaceAndPath("catbud_addons", "textures/gui/radar_arrow.png");
-    private static final Identifier ABOVE = Identifier.fromNamespaceAndPath("catbud_addons", "textures/gui/radar_above.png");
-    private static final Identifier BELOW = Identifier.fromNamespaceAndPath("catbud_addons", "textures/gui/radar_below.png");
-    private static final Identifier COIN = Identifier.fromNamespaceAndPath("catbud_addons", "textures/gui/coin_of_tower.png");
-    private static final Identifier BOOK = Identifier.fromNamespaceAndPath("minecraft", "textures/item/enchanted_book.png");
+
+    private static final Identifier ARROW = Identifier.fromNamespaceAndPath("catbud_addons",
+        "textures/gui/radar_arrow.png");
+    private static final Identifier ABOVE = Identifier.fromNamespaceAndPath("catbud_addons",
+        "textures/gui/radar_above.png");
+    private static final Identifier BELOW = Identifier.fromNamespaceAndPath("catbud_addons",
+        "textures/gui/radar_below.png");
+    private static final Identifier COIN  = Identifier.fromNamespaceAndPath("catbud_addons",
+        "textures/gui/coin_of_tower.png");
+    private static final Identifier BOOK  = Identifier.fromNamespaceAndPath("minecraft",
+        "textures/item/enchanted_book.png");
 
     private record Marker(Vec3 center, WorldTargets.PortalType portalType, WorldTargets.SpecialType specialType) {}
 
-    private RadarHud() {}
+    private RadarHud() {
+    }
 
     static void render(HudGraphics graphics, Minecraft client, TowerSession session) {
-        if (!session.isActive() || client.level == null || client.player == null) return;
+        if (!session.isActive() || client.level == null || client.player == null) {
+            return;
+        }
         var settings = MagicTowerSettings.values();
-        if (!settings.bool("radar.enabled")) return;
+        if (!settings.bool("radar.enabled")) {
+            return;
+        }
         Camera camera = ClientPlatform.camera(client);
         Vec3 cameraPos = ClientPlatform.position(camera);
         int width = client.getWindow().getGuiScaledWidth();
@@ -34,21 +46,23 @@ final class RadarHud {
         int margin = Math.min(settings.integer("radar.margin"), Math.min(width, height) / 2 - 1);
         int tint = (int) Math.round(settings.number("radar.opacity") * 255) << 24 | 0xFFFFFF;
         List<Marker> allMarkers = new ArrayList<>();
-        for (WorldTargets.PortalMarker portal : session.targets().portalMarkers())
+        for (WorldTargets.PortalMarker portal : session.targets().portalMarkers()) {
             allMarkers.add(new Marker(portal.center(), portal.type(), null));
-        for (WorldTargets.SpecialMarker special : session.targets().specialMarkers())
+        }
+        for (WorldTargets.SpecialMarker special : session.targets().specialMarkers()) {
             allMarkers.add(new Marker(special.center(), null, special.type()));
-        List<Marker> markers = allMarkers.stream()
-            .filter(marker -> settings.bool("radar." + markerType(marker)))
-            .filter(marker -> settings.number("radar.distance") == 0
-                || marker.center().distanceToSqr(cameraPos) <= Math.pow(settings.number("radar.distance"), 2))
-            .sorted(Comparator.comparingDouble(marker -> marker.center().distanceToSqr(cameraPos)))
-            .limit(64).toList();
+        }
+        List<Marker> markers = allMarkers.stream().filter(marker -> settings.bool("radar." + markerType(marker)))
+            .filter(marker -> settings.number("radar.distance") == 0 || marker.center().distanceToSqr(cameraPos) <= Math
+                .pow(settings.number("radar.distance"), 2)).sorted(Comparator.comparingDouble(marker -> marker.center()
+                    .distanceToSqr(cameraPos))).limit(64).toList();
         for (Marker marker : markers) {
             Vec3 target = marker.center();
             Vec3 delta = target.subtract(cameraPos);
             double distance = delta.length();
-            if (distance < settings.number("radar.hideNear")) continue;
+            if (distance < settings.number("radar.hideNear")) {
+                continue;
+            }
             double yaw = Math.toRadians(ClientPlatform.yRot(camera));
             double pitch = Math.toRadians(ClientPlatform.xRot(camera));
             double right = cameraRight(delta, yaw);
@@ -71,9 +85,11 @@ final class RadarHud {
             } else {
                 double dx = viewForward > 0 ? projectedX - width / 2.0 : right;
                 double dy = viewForward > 0 ? projectedY - height / 2.0 : -viewUp;
-                if (Math.abs(dx) + Math.abs(dy) < 0.001) dy = 1;
-                double factor = Math.min((width / 2.0 - margin) / Math.max(0.001, Math.abs(dx)),
-                    (height / 2.0 - margin) / Math.max(0.001, Math.abs(dy)));
+                if (Math.abs(dx) + Math.abs(dy) < 0.001) {
+                    dy = 1;
+                }
+                double factor = Math.min((width / 2.0 - margin) / Math.max(0.001, Math.abs(dx)), (height / 2.0 - margin)
+                    / Math.max(0.001, Math.abs(dy)));
                 x = (int) Math.round(width / 2.0 + dx * factor);
                 y = (int) Math.round(height / 2.0 + dy * factor);
                 angle = Math.atan2(dy, dx);
@@ -84,13 +100,13 @@ final class RadarHud {
             graphics.pose().translate(x, y);
             graphics.pose().scale((float) settings.number("radar.iconScale"));
             if (marker.specialType() != null) {
-                graphics.blit(RenderPipelines.GUI_TEXTURED,
-                    marker.specialType() == WorldTargets.SpecialType.COIN_BANK ? COIN : BOOK,
-                    -8, -8, 0, 0, 16, 16, 16, 16, tint);
+                graphics.blit(RenderPipelines.GUI_TEXTURED, marker.specialType() == WorldTargets.SpecialType.COIN_BANK
+                    ? COIN
+                    : BOOK, -8, -8, 0, 0, 16, 16, 16, 16, tint);
             } else {
                 int color = settings.color("radar.color." + markerType(marker), "radar.opacity");
-                graphics.centeredText(client.font,
-                    marker.portalType() == WorldTargets.PortalType.NETHER ? "N" : "E", 0, -4, color);
+                graphics.centeredText(client.font, marker.portalType() == WorldTargets.PortalType.NETHER ? "N" : "E", 0,
+                    -4, color);
             }
             if (!onScreen && settings.bool("radar.arrows")) {
                 graphics.pose().pushMatrix();
@@ -114,7 +130,9 @@ final class RadarHud {
     }
 
     private static String markerType(Marker marker) {
-        if (marker.specialType() != null) return marker.specialType() == WorldTargets.SpecialType.COIN_BANK ? "coin" : "enchantment";
+        if (marker.specialType() != null) {
+            return marker.specialType() == WorldTargets.SpecialType.COIN_BANK ? "coin" : "enchantment";
+        }
         return marker.portalType() == WorldTargets.PortalType.NETHER ? "nether" : "end";
     }
 

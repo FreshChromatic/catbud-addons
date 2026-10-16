@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1, "id": "catbud_public_warps", "version": "${version}",
+  "name": "Catbud Public Warps", "description": "Shared public warps and block previews.",
+  "environment": "client", "authors": ["Catbud"],
+  "entrypoints": { "client": ["github.freshchromatic.catbud_addons.public_warps.PublicWarpsClient"] },
+  "mixins": ["public_warps.mixins.json"],
+  "depends": { "catbud_core": ">=${core_version}", "fabricloader": ">=${loader_version}",
+    "fabric-api": "*", "minecraft": "~${minecraft_version}", "java": ">=${java_version}" }
+}

@@ -1,0 +1,25 @@
+{
+  "name": "catbud-public-warps-cloud",
+  "version": "1.0.3",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "npm run bundle && node tools/local.mjs serve",
+    "migrate:local": "npm run bundle && node tools/local.mjs migrate",
+    "test": "npm run bundle && node --test test/*.test.mjs",
+    "deploy": "wrangler deploy",
+    "bundle": "wrangler deploy --dry-run --outdir build/test-worker",
+    "admin": "node tools/local.mjs",
+    "cloud": "node tools/cloud.mjs",
+    "usage": "node tools/usage-report.mjs"
+  },
+  "devDependencies": {
+    "wrangler": "4.149.0"
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "dependencies": {
+    "jose": "6.2.12"
+  }
+}

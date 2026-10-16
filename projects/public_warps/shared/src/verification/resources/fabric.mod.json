@@ -1,0 +1,5 @@
+{
+  "schemaVersion": 1, "id": "catbud_warps_verification", "version": "1.0.3",
+  "environment": "client",
+  "entrypoints": { "client": ["github.freshchromatic.catbud_addons.public_warps.WarpVerificationClient"] }
+}

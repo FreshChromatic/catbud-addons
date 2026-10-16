@@ -12,15 +12,15 @@ allprojects {
 tasks.register('build') {
     group = 'build'
     description = 'Build all modules for every supported Minecraft version.'
-    dependsOn(['catbud_core', 'magic_tower'].collectMany { module ->
-        ['1.21.11', '26.2', '26.3'].collect { mc -> ":projects:${module}:${mc}:build" }
+    dependsOn(['catbud_core', 'magic_tower', 'public_warps'].collectMany { module ->
+        ['1.21.11', '26.1.2', '26.2', '26.3'].collect { mc -> ":projects:${module}:${mc}:build" }
     })
 }
 tasks.register('assemble') {
     group = 'build'
     description = 'Compile and package all versions without running tests.'
-    dependsOn(['catbud_core', 'magic_tower'].collectMany { module ->
-        ['1.21.11', '26.2', '26.3'].collect { mc -> ":projects:${module}:${mc}:assemble" }
+    dependsOn(['catbud_core', 'magic_tower', 'public_warps'].collectMany { module ->
+        ['1.21.11', '26.1.2', '26.2', '26.3'].collect { mc -> ":projects:${module}:${mc}:assemble" }
     })
 }
 tasks.register('releaseJars') {

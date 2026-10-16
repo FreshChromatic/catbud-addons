@@ -17,7 +17,8 @@ loom {
     runs {
         client {
             source sourceSets.verification
-            runDir project.hasProperty('verifyLegacy') ? 'build/verification-legacy' : 'build/verification-client'
+            runDir project.hasProperty('verifyManualControls') ? 'build/verification-manual-controls' : project.hasProperty('verifyLegacy') ? 'build/verification-legacy' : 'build/verification-client'
+            if (project.hasProperty('verifyManualControls')) vmArg '-Dcatbud.verify.manualControls=true'
             if (project.hasProperty('verifyWorldOnly')) vmArg '-Dcatbud.verify.worldOnly=true'
             if (project.hasProperty('verifyTooltips')) vmArg '-Dcatbud.verify.tooltipsOnly=true'
             if (project.hasProperty('verifyLegacy')) vmArg '-Dcatbud.verify.legacy=true'

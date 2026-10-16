@@ -1,0 +1,5 @@
+{
+  "required": true, "package": "github.freshchromatic.catbud_addons.public_warps.mixin",
+  "compatibilityLevel": "JAVA_${java_version}",
+  "client": ["WarpPacketMixin","WarpGuiRendererMixin"${preview_target_mixin}], "injectors": { "defaultRequire": 1 }
+}

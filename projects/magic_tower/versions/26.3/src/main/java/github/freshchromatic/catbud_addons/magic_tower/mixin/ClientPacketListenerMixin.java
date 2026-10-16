@@ -1,18 +1,20 @@
 package github.freshchromatic.catbud_addons.magic_tower.mixin;
 
 import github.freshchromatic.catbud_addons.magic_tower.CatbudAddonsClient;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientPacketListener;
 import net.minecraft.network.protocol.game.ClientboundBlockUpdatePacket;
-import net.minecraft.network.protocol.game.ClientboundLevelChunkWithLightPacket;
-import net.minecraft.network.protocol.game.ClientboundSectionBlocksUpdatePacket;
-import net.minecraft.network.protocol.game.ClientboundPlayerPositionPacket;
 import net.minecraft.network.protocol.game.ClientboundBossEventPacket;
+import net.minecraft.network.protocol.game.ClientboundLevelChunkWithLightPacket;
+import net.minecraft.network.protocol.game.ClientboundPlayerPositionPacket;
 import net.minecraft.network.protocol.game.ClientboundRespawnPacket;
+import net.minecraft.network.protocol.game.ClientboundSectionBlocksUpdatePacket;
 import net.minecraft.network.protocol.game.ClientboundSetActionBarTextPacket;
 import net.minecraft.network.protocol.game.ClientboundSetSubtitleTextPacket;
 import net.minecraft.network.protocol.game.ClientboundSetTitleTextPacket;
 import net.minecraft.network.protocol.game.ClientboundSystemChatPacket;
+
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -20,6 +22,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(ClientPacketListener.class)
 public class ClientPacketListenerMixin {
+
     @Inject(method = "handleBlockUpdate", at = @At("TAIL"))
     private void catbud$onServerBlockUpdate(ClientboundBlockUpdatePacket packet, CallbackInfo ci) {
         if (CatbudAddonsClient.session().isActive() && Minecraft.getInstance().level != null) {
@@ -30,26 +33,24 @@ public class ClientPacketListenerMixin {
     @Inject(method = "handleChunkBlocksUpdate", at = @At("TAIL"))
     private void catbud$onServerSectionUpdate(ClientboundSectionBlocksUpdatePacket packet, CallbackInfo ci) {
         if (CatbudAddonsClient.session().isActive() && Minecraft.getInstance().level != null) {
-            packet.runUpdates((pos, state) ->
-                CatbudAddonsClient.session().targets().onBlockChanged(Minecraft.getInstance().level, pos));
+            packet.runUpdates((pos, state) -> CatbudAddonsClient.session().targets().onBlockChanged(Minecraft
+                .getInstance().level, pos));
         }
     }
 
     @Inject(method = "handleLevelChunkWithLight", at = @At("TAIL"))
     private void catbud$onServerChunkUpdate(ClientboundLevelChunkWithLightPacket packet, CallbackInfo ci) {
-        if (Minecraft.getInstance().level != null)
-            CatbudAddonsClient.onWorldChunkChanged(Minecraft.getInstance().level,
-                packet.x(), packet.z());
+        if (Minecraft.getInstance().level != null) {
+            CatbudAddonsClient.onWorldChunkChanged(Minecraft.getInstance().level, packet.x(), packet.z());
+        }
     }
 
     @Inject(method = "handleBossUpdate", at = @At("TAIL"))
     private void catbud$onBossbarUpdate(ClientboundBossEventPacket packet, CallbackInfo ci) {
         packet.dispatch(new ClientboundBossEventPacket.Handler() {
+
             @Override
-            public void add(java.util.UUID id, net.minecraft.network.chat.Component name, float progress,
-                            net.minecraft.world.BossEvent.BossBarColor color,
-                            net.minecraft.world.BossEvent.BossBarOverlay overlay,
-                            boolean darkenScreen, boolean playMusic, boolean createWorldFog) {
+            public void add(java.util.UUID id, net.minecraft.network.chat.Component name, float progress, net.minecraft.world.BossEvent.BossBarColor color, net.minecraft.world.BossEvent.BossBarOverlay overlay, boolean darkenScreen, boolean playMusic, boolean createWorldFog) {
                 CatbudAddonsClient.session().onBossbarName(id, name);
             }
 
@@ -90,4 +91,3 @@ public class ClientPacketListenerMixin {
         CatbudAddonsClient.session().onMessage(packet.content(), "Chat");
     }
 }
-

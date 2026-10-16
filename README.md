@@ -16,16 +16,16 @@ catbud-addons/
 └── projects/
     ├── catbud_core/
     │   ├── shared/src/main/       # 設定結構、儲存、註冊、資源
-    │   ├── shared/src/modern/     # 26.2 與 26.3 共用的設定介面
+    │   ├── shared/src/modern/     # 26.1.2、26.2 與 26.3 共用的設定介面
     │   ├── shared/src/test/
-    │   └── versions/{1.21.11,26.2,26.3}/
+    │   └── versions/{1.21.11,26.1.2,26.2,26.3}/
     │       ├── build.gradle / version.properties
     │       └── src/main/java/    # 客戶端、輸入與 HUD 轉接層；舊版設定介面
     └── magic_tower/
         ├── shared/src/main/      # 工作階段、掃描、尋路、HUD 演算法、資源
         ├── shared/src/test/
         ├── shared/src/verification/
-        └── versions/{1.21.11,26.2,26.3}/
+        └── versions/{1.21.11,26.1.2,26.2,26.3}/
             ├── build.gradle / version.properties
             └── src/main/java/    # 路線渲染與版本專用封包 Mixin
 ```
@@ -35,23 +35,22 @@ catbud-addons/
 ## 編譯與打包
 
 ```powershell
-.\gradlew\.bat assemble
-.\gradlew\.bat releaseJars
-.\gradlew\.bat :projects:magic_tower:26.2:assemble
+.\gradlew.bat assemble
+.\gradlew.bat releaseJars
+.\gradlew.bat :projects:magic_tower:26.1.2:assemble
 ```
 
-`assemble` 會打包全部六種「模組 × 版本」組合，但不會執行測試或啟動客戶端。
+`assemble` 會打包全部十二種「模組 × 版本」組合，但不會執行測試或啟動客戶端。
 
-`releaseJars` 還會將三個可安裝的 Magic Tower JAR 收集至 `build/releases/`：
+`releaseJars` 會將四個版本的 Core、Magic Tower 與公共傳點可安裝 JAR 輸出至 `out/`。
+Magic Tower 與公共傳點 JAR 已內嵌對應版本的 Core。全部模組版本為 **1.0.3**。
+
+26.1.2 的產物為：
 
 ```text
-catbud-magic_tower-1.21.11-1.0.jar
-catbud-magic_tower-26.2-1.0.jar
-catbud-magic_tower-26.3-1.0.jar
+out/catbud-core-26.1.2-1.0.3.jar
+out/catbud-magic_tower-26.1.2-1.0.3.jar
+out/catbud-public_warps-26.1.2-1.0.3.jar
 ```
 
-各個獨立產物位於：
-
-```text
-projects/<module>/versions/<minecraft>/build/libs/
-```
+開發用與原始碼產物位於 `projects/<module>/versions/<minecraft>/build/libs/`。

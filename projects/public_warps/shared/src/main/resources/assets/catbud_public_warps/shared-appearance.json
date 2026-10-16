@@ -1,0 +1,619 @@
+{
+  "definitions": {
+    "number": {
+      "kind": "number",
+      "min": -1000000,
+      "max": 1000000
+    },
+    "identifier": {
+      "kind": "string",
+      "pattern": "^[a-z0-9_.-]+:[a-z0-9_./-]+$",
+      "max": 128
+    },
+    "enumeration": {
+      "kind": "string",
+      "pattern": "^[a-z0-9_.:/-]+$",
+      "max": 64
+    },
+    "block": {
+      "kind": "compound",
+      "fields": {
+        "Name": {
+          "ref": "identifier"
+        },
+        "Properties": {
+          "kind": "properties",
+          "max": 32
+        }
+      }
+    },
+    "item": {
+      "kind": "compound",
+      "fields": {
+        "id": {
+          "ref": "identifier"
+        },
+        "count": {
+          "kind": "number",
+          "min": 0,
+          "max": 99
+        },
+        "Count": {
+          "kind": "number",
+          "min": 0,
+          "max": 99
+        },
+        "tag": {
+          "kind": "compound",
+          "fields": {
+            "CustomModelData": {
+              "ref": "number"
+            },
+            "display": {
+              "kind": "compound",
+              "fields": {
+                "color": {
+                  "kind": "number",
+                  "min": 0,
+                  "max": 16777215
+                }
+              }
+            }
+          }
+        },
+        "components": {
+          "kind": "compound",
+          "fields": {
+            "minecraft:dyed_color": {
+              "kind": "choice",
+              "options": [
+                {
+                  "kind": "number",
+                  "min": 0,
+                  "max": 16777215
+                },
+                {
+                  "kind": "compound",
+                  "fields": {
+                    "rgb": {
+                      "kind": "number",
+                      "min": 0,
+                      "max": 16777215
+                    },
+                    "show_in_tooltip": {
+                      "kind": "number",
+                      "min": 0,
+                      "max": 1
+                    }
+                  }
+                }
+              ]
+            },
+            "minecraft:item_model": {
+              "ref": "identifier"
+            },
+            "minecraft:enchantment_glint_override": {
+              "kind": "number",
+              "min": 0,
+              "max": 1
+            },
+            "minecraft:custom_model_data": {
+              "kind": "choice",
+              "options": [
+                {
+                  "ref": "number"
+                },
+                {
+                  "kind": "compound",
+                  "fields": {
+                    "floats": {
+                      "kind": "list",
+                      "element": {
+                        "ref": "number"
+                      },
+                      "max": 16
+                    },
+                    "flags": {
+                      "kind": "list",
+                      "element": {
+                        "kind": "number",
+                        "min": 0,
+                        "max": 1
+                      },
+                      "max": 16
+                    },
+                    "colors": {
+                      "kind": "list",
+                      "element": {
+                        "kind": "number",
+                        "min": 0,
+                        "max": 16777215
+                      },
+                      "max": 16
+                    },
+                    "strings": {
+                      "kind": "list",
+                      "element": {
+                        "ref": "enumeration"
+                      },
+                      "max": 16
+                    }
+                  }
+                }
+              ]
+            },
+            "minecraft:trim": {
+              "kind": "compound",
+              "fields": {
+                "material": {
+                  "ref": "identifier"
+                },
+                "pattern": {
+                  "ref": "identifier"
+                },
+                "show_in_tooltip": {
+                  "kind": "number",
+                  "min": 0,
+                  "max": 1
+                }
+              }
+            }
+          },
+          "glintFrom": "minecraft:enchantments"
+        }
+      }
+    },
+    "villager": {
+      "kind": "compound",
+      "fields": {
+        "type": {
+          "ref": "identifier"
+        },
+        "profession": {
+          "ref": "identifier"
+        },
+        "level": {
+          "kind": "number",
+          "min": 1,
+          "max": 5
+        }
+      }
+    },
+    "pose": {
+      "kind": "compound",
+      "fields": {
+        "Head": {
+          "kind": "list",
+          "element": {
+            "ref": "number"
+          },
+          "max": 3,
+          "min": 3
+        },
+        "Body": {
+          "kind": "list",
+          "element": {
+            "ref": "number"
+          },
+          "max": 3,
+          "min": 3
+        },
+        "LeftArm": {
+          "kind": "list",
+          "element": {
+            "ref": "number"
+          },
+          "max": 3,
+          "min": 3
+        },
+        "RightArm": {
+          "kind": "list",
+          "element": {
+            "ref": "number"
+          },
+          "max": 3,
+          "min": 3
+        },
+        "LeftLeg": {
+          "kind": "list",
+          "element": {
+            "ref": "number"
+          },
+          "max": 3,
+          "min": 3
+        },
+        "RightLeg": {
+          "kind": "list",
+          "element": {
+            "ref": "number"
+          },
+          "max": 3,
+          "min": 3
+        },
+        "head": {
+          "kind": "list",
+          "element": {
+            "ref": "number"
+          },
+          "max": 3,
+          "min": 3
+        },
+        "body": {
+          "kind": "list",
+          "element": {
+            "ref": "number"
+          },
+          "max": 3,
+          "min": 3
+        },
+        "left_arm": {
+          "kind": "list",
+          "element": {
+            "ref": "number"
+          },
+          "max": 3,
+          "min": 3
+        },
+        "right_arm": {
+          "kind": "list",
+          "element": {
+            "ref": "number"
+          },
+          "max": 3,
+          "min": 3
+        },
+        "left_leg": {
+          "kind": "list",
+          "element": {
+            "ref": "number"
+          },
+          "max": 3,
+          "min": 3
+        },
+        "right_leg": {
+          "kind": "list",
+          "element": {
+            "ref": "number"
+          },
+          "max": 3,
+          "min": 3
+        }
+      }
+    },
+    "transform": {
+      "kind": "choice",
+      "options": [
+        {
+          "kind": "list",
+          "element": {
+            "ref": "number"
+          },
+          "min": 16,
+          "max": 16
+        },
+        {
+          "kind": "compound",
+          "fields": {
+            "translation": {
+              "kind": "list",
+              "element": {
+                "ref": "number"
+              },
+              "min": 3,
+              "max": 3
+            },
+            "scale": {
+              "kind": "list",
+              "element": {
+                "ref": "number"
+              },
+              "min": 3,
+              "max": 3
+            },
+            "left_rotation": {
+              "kind": "list",
+              "element": {
+                "ref": "number"
+              },
+              "min": 4,
+              "max": 4
+            },
+            "right_rotation": {
+              "kind": "list",
+              "element": {
+                "ref": "number"
+              },
+              "min": 4,
+              "max": 4
+            }
+          }
+        }
+      ]
+    },
+    "equipment": {
+      "kind": "compound",
+      "fields": {
+        "head": {
+          "ref": "item"
+        },
+        "chest": {
+          "ref": "item"
+        },
+        "legs": {
+          "ref": "item"
+        },
+        "feet": {
+          "ref": "item"
+        },
+        "mainhand": {
+          "ref": "item"
+        },
+        "offhand": {
+          "ref": "item"
+        },
+        "main_hand": {
+          "ref": "item"
+        },
+        "off_hand": {
+          "ref": "item"
+        },
+        "body": {
+          "ref": "item"
+        },
+        "saddle": {
+          "ref": "item"
+        }
+      }
+    }
+  },
+  "fields": {
+    "Variant": {
+      "kind": "number",
+      "min": 0,
+      "max": 16777215
+    },
+    "Color": {
+      "kind": "number",
+      "min": 0,
+      "max": 15
+    },
+    "CollarColor": {
+      "kind": "number",
+      "min": 0,
+      "max": 15
+    },
+    "Age": {
+      "kind": "number",
+      "min": -24000,
+      "max": 24000
+    },
+    "Baby": {
+      "kind": "number",
+      "min": 0,
+      "max": 1
+    },
+    "Saddle": {
+      "kind": "number",
+      "min": 0,
+      "max": 1
+    },
+    "Saddled": {
+      "kind": "number",
+      "min": 0,
+      "max": 1
+    },
+    "Sheared": {
+      "kind": "number",
+      "min": 0,
+      "max": 1
+    },
+    "Size": {
+      "kind": "number",
+      "min": 0,
+      "max": 64
+    },
+    "size": {
+      "kind": "number",
+      "min": 0,
+      "max": 64
+    },
+    "Facing": {
+      "kind": "number",
+      "min": 0,
+      "max": 5
+    },
+    "facing": {
+      "kind": "number",
+      "min": 0,
+      "max": 5
+    },
+    "ItemRotation": {
+      "kind": "number",
+      "min": 0,
+      "max": 7
+    },
+    "item_rotation": {
+      "kind": "number",
+      "min": 0,
+      "max": 7
+    },
+    "Invisible": {
+      "kind": "number",
+      "min": 0,
+      "max": 1
+    },
+    "invisible": {
+      "kind": "number",
+      "min": 0,
+      "max": 1
+    },
+    "ShowArms": {
+      "kind": "number",
+      "min": 0,
+      "max": 1
+    },
+    "NoBasePlate": {
+      "kind": "number",
+      "min": 0,
+      "max": 1
+    },
+    "Small": {
+      "kind": "number",
+      "min": 0,
+      "max": 1
+    },
+    "view_range": {
+      "kind": "number",
+      "min": 0,
+      "max": 64
+    },
+    "shadow_radius": {
+      "kind": "number",
+      "min": 0,
+      "max": 64
+    },
+    "shadow_strength": {
+      "kind": "number",
+      "min": 0,
+      "max": 1
+    },
+    "width": {
+      "kind": "number",
+      "min": 0,
+      "max": 50
+    },
+    "height": {
+      "kind": "number",
+      "min": 0,
+      "max": 50
+    },
+    "glow_color_override": {
+      "kind": "number",
+      "min": -2147483648,
+      "max": 2147483647
+    },
+    "variant": {
+      "kind": "choice",
+      "options": [
+        {
+          "ref": "enumeration"
+        },
+        {
+          "ref": "number"
+        }
+      ]
+    },
+    "Type": {
+      "kind": "choice",
+      "options": [
+        {
+          "ref": "enumeration"
+        },
+        {
+          "ref": "number"
+        }
+      ]
+    },
+    "type": {
+      "kind": "choice",
+      "options": [
+        {
+          "ref": "enumeration"
+        },
+        {
+          "ref": "number"
+        }
+      ]
+    },
+    "painting_variant": {
+      "kind": "choice",
+      "options": [
+        {
+          "ref": "enumeration"
+        },
+        {
+          "ref": "number"
+        }
+      ]
+    },
+    "billboard": {
+      "kind": "choice",
+      "options": [
+        {
+          "ref": "enumeration"
+        },
+        {
+          "ref": "number"
+        }
+      ]
+    },
+    "VillagerData": {
+      "ref": "villager"
+    },
+    "villager_data": {
+      "ref": "villager"
+    },
+    "carriedBlockState": {
+      "ref": "block"
+    },
+    "carried_block_state": {
+      "ref": "block"
+    },
+    "BlockState": {
+      "ref": "block"
+    },
+    "block_state": {
+      "ref": "block"
+    },
+    "equipment": {
+      "ref": "equipment"
+    },
+    "Equipment": {
+      "ref": "equipment"
+    },
+    "Item": {
+      "ref": "item"
+    },
+    "item": {
+      "ref": "item"
+    },
+    "ArmorItems": {
+      "kind": "list",
+      "element": {
+        "ref": "item"
+      },
+      "max": 4
+    },
+    "HandItems": {
+      "kind": "list",
+      "element": {
+        "ref": "item"
+      },
+      "max": 2
+    },
+    "Pose": {
+      "ref": "pose"
+    },
+    "pose": {
+      "ref": "pose"
+    },
+    "transformation": {
+      "ref": "transform"
+    },
+    "brightness": {
+      "kind": "compound",
+      "fields": {
+        "sky": {
+          "kind": "number",
+          "min": 0,
+          "max": 15
+        },
+        "block": {
+          "kind": "number",
+          "min": 0,
+          "max": 15
+        }
+      }
+    }
+  }
+}

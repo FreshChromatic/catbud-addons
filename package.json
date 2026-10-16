@@ -1,0 +1,11 @@
+{
+  "name": "catbud-addons-development",
+  "private": true,
+  "scripts": {
+    "format:service": "node tools/readable-service.mjs && prettier --write \"services/public-warps/**/*.mjs\" \"services/public-warps-cloud/src/**/*.mjs\" \"services/public-warps-cloud/test/**/*.mjs\" \"services/public-warps-cloud/tools/**/*.mjs\" tools/readable-service.mjs",
+    "check:service": "node tools/readable-service.mjs --check && prettier --check \"services/public-warps/**/*.mjs\" \"services/public-warps-cloud/src/**/*.mjs\" \"services/public-warps-cloud/test/**/*.mjs\" \"services/public-warps-cloud/tools/**/*.mjs\" tools/readable-service.mjs"
+  },
+  "devDependencies": {
+    "prettier": "3.9.10"
+  }
+}

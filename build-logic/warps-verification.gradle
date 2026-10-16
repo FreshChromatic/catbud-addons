@@ -1,0 +1,28 @@
+sourceSets {
+    verification {
+        java.srcDir file('../../shared/src/verification/java')
+        java.srcDir file('src/verification/java')
+        resources.srcDir file('../../shared/src/verification/resources')
+        compileClasspath += sourceSets.main.output + sourceSets.main.compileClasspath
+        runtimeClasspath += sourceSets.main.output + sourceSets.main.runtimeClasspath
+    }
+}
+configurations.verificationImplementation.extendsFrom(configurations.implementation)
+configurations.verificationRuntimeOnly.extendsFrom(configurations.runtimeOnly)
+loom {
+    mods {
+        catbud_public_warps { sourceSet sourceSets.main }
+        catbud_warps_verification { sourceSet sourceSets.verification }
+    }
+    runs {
+        client { source sourceSets.verification
+        runDir 'build/verification-client' }
+    }
+}
+if (project.hasProperty('verifyWarpsInput')) {
+    loom.runs.client.vmArg '-Dcatbud.verify.input=true'
+}
+if (project.hasProperty('verifyOwnerEdit')) {
+    loom.runs.client.vmArg '-Dcatbud.verify.owner=true'
+}
+tasks.named('runClient') { dependsOn tasks.named('verificationClasses') }

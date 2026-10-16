@@ -1,0 +1,52 @@
+{
+  "name": "api",
+  "main": "src/worker.mjs",
+  "compatibility_date": "2026-10-11",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": true,
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "catbud-public-warps",
+      "database_id": "27a2016a-6b97-409d-87c9-f28b4d021c1e",
+      "migrations_dir": "migrations",
+    },
+  ],
+  "vars": {
+    "POSTING_ENABLED": "true",
+    "VERIFY_DAILY_LIMIT": "2600",
+    "PREVIEW_DAILY_LIMIT": "1000",
+    "STORAGE_LIMIT_BYTES": "335544320",
+    "DATABASE_SOFT_LIMIT_BYTES": "350000000",
+    "DATABASE_HARD_LIMIT_BYTES": "400000000",
+  },
+  "ratelimits": [
+    {
+      "name": "ORIGIN_BURST",
+      "namespace_id": "77029288",
+      "simple": {
+        "limit": 6000,
+        "period": 60,
+      },
+    },
+    {
+      "name": "PUBLIC_BURST",
+      "namespace_id": "11960327",
+      "simple": {
+        "limit": 600,
+        "period": 60,
+      },
+    },
+    {
+      "name": "WRITE_BURST",
+      "namespace_id": "42595606",
+      "simple": {
+        "limit": 120,
+        "period": 60,
+      },
+    },
+  ],
+  "triggers": {
+    "crons": ["* * * * *"],
+  },
+}
