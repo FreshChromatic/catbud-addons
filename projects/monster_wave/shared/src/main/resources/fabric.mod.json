@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "id": "catbud_monster_wave",
+  "version": "${version}",
+  "name": "Catbud Monster Wave",
+  "description": "Monster Wave low-health disconnect and local run observations.",
+  "environment": "client",
+  "authors": [
+    "Catbud"
+  ],
+  "entrypoints": {
+    "client": [
+      "github.freshchromatic.catbud_addons.monster_wave.MonsterWaveClient"
+    ]
+  },
+  "mixins": [
+    "monster_wave.mixins.json"
+  ],
+  "depends": {
+    "catbud_core": ">=${core_version}",
+    "fabricloader": ">=${loader_version}",
+    "fabric-api": "*",
+    "minecraft": "~${minecraft_version}",
+    "java": ">=${java_version}"
+  }
+}

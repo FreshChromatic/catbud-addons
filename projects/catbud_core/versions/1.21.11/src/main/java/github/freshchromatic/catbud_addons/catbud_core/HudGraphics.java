@@ -16,6 +16,17 @@ public final class HudGraphics {
         this.graphics = graphics;
     }
 
+    public void text(Font font, net.minecraft.network.chat.Component text, int x, int y, int color) {
+        if ((color >>> 24) != 0) {
+            graphics.drawString(font, text, x, y, color, false);
+        }
+    }
+
+    public void texture(Identifier texture, int x, int y, int width, int height) {
+        graphics.blit(net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED, texture, x, y, 0, 0, width, height,
+            16, 16, 16, 16);
+    }
+
     public Matrix3x2fStack pose() {
         return graphics.pose();
     }

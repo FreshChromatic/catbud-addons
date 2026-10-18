@@ -59,8 +59,9 @@ final class PanelButton extends Button {
                     16, 16, 16, 16);
                 textX += 9;
             }
-            g.centeredText(Minecraft.getInstance().font, getMessage(), textX, y + (h - 8) / 2, selected != null
-                && !checked && !focused ? 0xFFAAAAAA : color);
+            g.centeredText(Minecraft.getInstance().font, Minecraft.getInstance().font.plainSubstrByWidth(getMessage()
+                .getString(), w - (icon == null ? 8 : 26)), textX, y + (h - 8) / 2, selected != null && !checked
+                    && !focused ? 0xFFAAAAAA : color);
         }
     }
 

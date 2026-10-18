@@ -15,14 +15,11 @@ import java.util.UUID;
 
 public final class TowerSession {
 
-    private static final String QUEUE_KEY              = "plugins.venue_manager.room_queuing_distance";
-    private static final String TOWER_KEY              = "plugins.magic_tower.magic_tower";
-    private static final String READY_KEY              = "plugins.venue_manager.venue_waiting_activate";
-    private static final String FLOOR_KEY              = "plugins.magic_tower.waiting_layer_response";
-    private static final String EVACUATION_PRESENT_KEY = "plugins.magic_tower.evacuation_room_appeared";
-    private static final String EVACUATION_ABSENT_KEY  = "plugins.magic_tower.no_evacuation_room_appeared";
+    private static final String QUEUE_KEY = "plugins.venue_manager.room_queuing_distance";
+    private static final String TOWER_KEY = "plugins.magic_tower.magic_tower";
+    private static final String READY_KEY = "plugins.venue_manager.venue_waiting_activate";
+    private static final String FLOOR_KEY = "plugins.magic_tower.waiting_layer_response";
 
-    private static final long       ANNOUNCEMENT_GRACE_MS = 5_000;
     private static final Identifier CUSTOM_DIMENSION      = Identifier.fromNamespaceAndPath("minecraft", "custom");
     private static final long       VANISH_GRACE_MS       = 3_000;
     private static final long       READY_VANISH_GRACE_MS = 15_000;
@@ -53,9 +50,7 @@ public final class TowerSession {
     private long    lastFloorSignal;
     private boolean floorBossbarVisible;
 
-    private EvacuationStatus evacuationStatus     = EvacuationStatus.UNKNOWN;
-    private EvacuationStatus recentAnnouncement   = EvacuationStatus.UNKNOWN;
-    private long             recentAnnouncementAt = -1;
+    private final TowerFloorState floorState = new TowerFloorState();
 
     private long floorEpoch;
 
@@ -79,7 +74,11 @@ public final class TowerSession {
     }
 
     public EvacuationStatus evacuationStatus() {
-        return evacuationStatus;
+        return floorState.evacuation();
+    }
+
+    public java.util.OptionalInt floor() {
+        return floorState.floor();
     }
 
     public long floorEpoch() {
@@ -190,47 +189,26 @@ public final class TowerSession {
         long now = System.currentTimeMillis();
         if (TextKeys.contains(text, FLOOR_KEY) && isActive() && now - lastFloorSignal >= 1_000) {
             lastFloorSignal = now;
-            targets.clear();
-            evacuationStatus = recentAnnouncementAt >= 0 && now - recentAnnouncementAt <= ANNOUNCEMENT_GRACE_MS
-                ? recentAnnouncement
-                : EvacuationStatus.UNKNOWN;
-            floorEpoch++;
-            CatbudAddonsClient.LOGGER.debug("樓層訊號（" + channel + "）：清除標記並重新掃描");
+            if (floorState.waiting(now)) {
+                targets.clear();
+                floorEpoch++;
+                CatbudAddonsClient.LOGGER.debug("樓層訊號（" + channel + "）：清除標記並重新掃描");
+            }
         }
         if (!"Title".equals(channel) && !"Subtitle".equals(channel)) {
             return;
         }
-        EvacuationStatus announced = announcementStatus(text);
-        if (announced == EvacuationStatus.UNKNOWN) {
-            return;
+        if (phase == Phase.QUEUED || phase == Phase.READY || isActive()) {
+            var announcement = TowerAnnouncementParser.parse(text);
+            boolean changedFloor = announcement.floor().isPresent() && floorState.floor().isPresent() && !announcement
+                .floor().equals(floorState.floor());
+            floorState.announce(announcement, now);
+            if (changedFloor && isActive()) {
+                targets.clear();
+                floorEpoch++;
+                lastFloorSignal = now;
+            }
         }
-        if (isActive() && evacuationStatus != EvacuationStatus.UNKNOWN && evacuationStatus != announced) {
-            CatbudAddonsClient.LOGGER.debug("收到互相矛盾的撤離室公告；以最新公告為準");
-        }
-        recentAnnouncement = announced;
-        recentAnnouncementAt = now;
-        if (isActive()) {
-            evacuationStatus = announced;
-        }
-    }
-
-    private static EvacuationStatus announcementStatus(Component text) {
-        if (matchesAnnouncement(text, EVACUATION_PRESENT_KEY)) {
-            return EvacuationStatus.PRESENT;
-        }
-        return matchesAnnouncement(text, EVACUATION_ABSENT_KEY) ? EvacuationStatus.ABSENT : EvacuationStatus.UNKNOWN;
-    }
-
-    private static boolean matchesAnnouncement(Component text, String key) {
-        if (TextKeys.contains(text, key)) {
-            return true;
-        }
-        if (text == null) {
-            return false;
-        }
-        String rendered = text.getString().strip();
-        String localized = Language.getInstance().getOrDefault(key);
-        return rendered.equals(key) || (!localized.equals(key) && rendered.equals(localized));
     }
 
     public void tick(Minecraft mc) {
@@ -268,8 +246,8 @@ public final class TowerSession {
             if (manualMode == ManualMode.FORCED) {
                 if (changedWorld || changedDimension) {
                     targets.clear();
-                    evacuationStatus = EvacuationStatus.UNKNOWN;
-                    recentAnnouncement = EvacuationStatus.UNKNOWN;
+                    floorState.reset();
+
                     floorEpoch++;
                     CatbudAddonsClient.LOGGER.debug("世界變更，重新掃描");
                 }
@@ -323,8 +301,7 @@ public final class TowerSession {
                 vanishedAt = -1;
                 teleportPacketSeen = false;
                 targets.clear();
-                evacuationStatus = recentAnnouncementAt >= 0 && System.currentTimeMillis()
-                    - recentAnnouncementAt <= ANNOUNCEMENT_GRACE_MS ? recentAnnouncement : EvacuationStatus.UNKNOWN;
+                floorState.entered(System.currentTimeMillis());
                 floorEpoch++;
                 lastFloorSignal = 0;
                 floorBossbarVisible = false;
@@ -362,9 +339,7 @@ public final class TowerSession {
         floorBossbarVisible = false;
         lastFloorSignal = 0;
         targets.clear();
-        evacuationStatus = EvacuationStatus.UNKNOWN;
-        recentAnnouncement = EvacuationStatus.UNKNOWN;
-        recentAnnouncementAt = -1;
+        floorState.reset();
         floorEpoch++;
     }
 }

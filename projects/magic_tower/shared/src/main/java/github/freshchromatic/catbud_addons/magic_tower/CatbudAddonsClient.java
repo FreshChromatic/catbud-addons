@@ -20,9 +20,10 @@ import org.slf4j.LoggerFactory;
 
 public final class CatbudAddonsClient implements ClientModInitializer {
 
-    static final Logger               LOGGER  = LoggerFactory.getLogger("Catbud Magic Tower");
-    private static final TowerSession SESSION = new TowerSession();
-    private static KeyMapping         targetLineKey;
+    static final Logger                LOGGER  = LoggerFactory.getLogger("Catbud Magic Tower");
+    private static final TowerSession  SESSION = new TowerSession();
+    private static final TowerHudState HUD     = new TowerHudState(SESSION);
+    private static KeyMapping          targetLineKey;
 
     public static TowerSession session() {
         return SESSION;
@@ -59,12 +60,16 @@ public final class CatbudAddonsClient implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
         MagicTowerSettings.register();
+        github.freshchromatic.catbud_addons.catbud_core.CatbudCore.huds().register(new CoinHudElement(HUD));
+        github.freshchromatic.catbud_addons.catbud_core.CatbudCore.huds().register(new EvacuationHudElement(HUD));
+        github.freshchromatic.catbud_addons.catbud_core.CatbudCore.huds().register(new FloorHudElement(HUD));
         ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> SESSION.resetConnection());
         ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> SESSION.resetConnection());
         targetLineKey = ClientPlatform.registerKey("key.catbud_addons.toggle_target_line", InputConstants.KEY_GRAVE,
             Identifier.fromNamespaceAndPath("catbud_addons", "general"));
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             SESSION.tick(client);
+            HUD.tick(client);
             while (targetLineKey.consumeClick()) {
                 if (ClientPlatform.screen(client) == null) {
                     TargetLines.toggleLookedAt(client, SESSION);

@@ -5,7 +5,7 @@ pluginManagement {
     }
 }
 rootProject.name = 'catbud-addons'
-['catbud_core', 'magic_tower', 'public_warps'].each { module ->
+['catbud_core', 'magic_tower', 'public_warps', 'monster_wave'].each { module ->
     ['1.21.11', '26.1.2', '26.2', '26.3'].each { mc ->
         def path = ":projects:${module}:${mc}"
         include path

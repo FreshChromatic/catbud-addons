@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "id": "catbud_monster_wave_verification",
+  "version": "1.0.0",
+  "name": "Monster Wave Verification",
+  "environment": "client",
+  "entrypoints": {
+    "client": ["github.freshchromatic.catbud_addons.monster_wave.MonsterWaveVerificationClient"]
+  },
+  "depends": {
+    "catbud_monster_wave": "*",
+    "catbud_core": "*"
+  }
+}

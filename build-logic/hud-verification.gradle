@@ -1,0 +1,30 @@
+sourceSets {
+    hudVerification {
+        java.srcDirs = [file('../../shared/src/hudVerification/java'), file('src/hudVerification/java')]
+        resources.srcDir file('../../shared/src/hudVerification/resources')
+        compileClasspath += sourceSets.main.output + sourceSets.main.compileClasspath
+        runtimeClasspath += sourceSets.main.output + sourceSets.main.runtimeClasspath
+    }
+}
+configurations.hudVerificationImplementation.extendsFrom(configurations.implementation)
+configurations.hudVerificationRuntimeOnly.extendsFrom(configurations.runtimeOnly)
+loom {
+    mods {
+        catbud_addons { sourceSet sourceSets.main }
+        catbud_hud_verification { sourceSet sourceSets.hudVerification }
+    }
+    runs {
+        client {
+            source sourceSets.hudVerification
+            runDir 'build/verification-hud'
+        }
+    }
+}
+tasks.named('runClient') {
+    dependsOn tasks.named('hudVerificationClasses')
+    doFirst {
+        def config = file('build/verification-hud/config/catbud')
+        config.mkdirs()
+        new File(config, 'hud.json').text = '{"configVersion":1,"elements":{}}'
+    }
+}

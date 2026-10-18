@@ -15,8 +15,18 @@ import java.util.*;
 public final class CatbudCore implements ClientModInitializer {
 
     private static final Map<String, SettingsAddon> ADDONS = new LinkedHashMap<>();
+    private static final HudRegistry                HUDS   = new HudRegistry();
     private static KeyMapping                       openKey;
     private static SettingsStore                    coreStore;
+    private static HudConfigStore                   hudStore;
+
+    public static HudRegistry huds() {
+        return HUDS;
+    }
+
+    public static HudConfigStore hudStore() {
+        return hudStore;
+    }
 
     static SettingsStore coreStore() {
         return coreStore;
@@ -49,6 +59,9 @@ public final class CatbudCore implements ClientModInitializer {
 
     @Override
     public void onInitializeClient() {
+        hudStore = new HudConfigStore(FabricLoader.getInstance().getConfigDir().resolve("catbud/hud.json"));
+        net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry.addLast(Identifier.fromNamespaceAndPath(
+            "catbud_core", "elements"), (graphics, delta) -> HudRenderer.renderGame(new HudGraphics(graphics)));
         coreStore = new SettingsStore(FabricLoader.getInstance().getConfigDir().resolve("catbud/core.json"), List.of(),
             v -> {
             });

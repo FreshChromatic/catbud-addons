@@ -11,6 +11,10 @@ import org.joml.Vector3fc;
 
 public final class ClientPlatform {
 
+    public static boolean hudHidden(Minecraft client) {
+        return client.gui.hud.isHidden();
+    }
+
     private ClientPlatform() {
     }
 

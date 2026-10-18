@@ -91,6 +91,12 @@ processResources {
 if (module == 'magic_tower' && minecraft_version == '26.2' && project.hasProperty('verifySettings')) {
     apply from: rootProject.file('build-logic/settings-verification.gradle')
 }
+if (module == 'magic_tower' && project.hasProperty('verifyHud')) {
+    apply from: rootProject.file('build-logic/hud-verification.gradle')
+}
 if (module == 'public_warps' && project.hasProperty('verifyWarps')) {
     apply from: rootProject.file('build-logic/warps-verification.gradle')
+}
+if (module == 'monster_wave' && project.hasProperty('verifyMonsterWave')) {
+    apply from: rootProject.file('build-logic/monster-wave-verification.gradle')
 }

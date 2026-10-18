@@ -1,0 +1,25 @@
+sourceSets {
+    verification {
+        java.srcDir file('../../shared/src/verification/java')
+        resources.srcDir file('../../shared/src/verification/resources')
+        compileClasspath += sourceSets.main.output + sourceSets.main.compileClasspath
+        runtimeClasspath += sourceSets.main.output + sourceSets.main.runtimeClasspath
+    }
+}
+configurations.verificationImplementation.extendsFrom(configurations.implementation)
+configurations.verificationRuntimeOnly.extendsFrom(configurations.runtimeOnly)
+loom {
+    mods {
+        catbud_monster_wave { sourceSet sourceSets.main }
+        catbud_monster_wave_verification { sourceSet sourceSets.verification }
+    }
+    runs {
+        client {
+            source sourceSets.verification
+            runDir 'build/verification-monster-wave'
+        }
+    }
+}
+tasks.named('runClient') {
+    dependsOn tasks.named('verificationClasses')
+}

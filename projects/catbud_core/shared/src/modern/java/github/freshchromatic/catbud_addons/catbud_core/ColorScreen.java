@@ -13,6 +13,8 @@ final class ColorScreen extends Screen {
     private final Screen           parent;
     private final Consumer<String> accepted;
     private int                    rgb;
+    private final String           initial;
+    private String                 editingHex;
     private EditBox                hex;
     private Button                 done;
     private int                    left, top, panelWidth;
@@ -21,6 +23,8 @@ final class ColorScreen extends Screen {
         super(title);
         this.parent = parent;
         this.accepted = accepted;
+        this.initial = initial.toUpperCase(java.util.Locale.ROOT);
+        this.editingHex = initial;
         rgb = Integer.parseInt(initial.substring(1), 16);
     }
 
@@ -65,8 +69,9 @@ final class ColorScreen extends Screen {
         hex = addRenderableWidget(new EditBox(font, left + 40, top + 78, controlsWidth - 40, 20, Component.translatable(
             "screen.catbud_core.hex")));
         hex.setMaxLength(7);
-        hex.setValue(value());
+        hex.setValue(editingHex);
         hex.setResponder(s -> {
+            editingHex = s;
             boolean valid = s.matches("#[0-9a-fA-F]{6}");
             if (done != null) {
                 done.active = valid;
@@ -81,8 +86,9 @@ final class ColorScreen extends Screen {
         done = addRenderableWidget(new PanelButton(left, top + 125, controlsWidth / 2 - 4, 20, Component.translatable(
             "gui.done"), b -> {
                 accepted.accept(value());
-                onClose();
+                ClientPlatform.show(minecraft, parent);
             }));
+        done.active = editingHex.matches("#[0-9a-fA-F]{6}");
     }
 
     @Override
@@ -101,7 +107,13 @@ final class ColorScreen extends Screen {
 
     @Override
     public void onClose() {
-        minecraft.setScreenAndShow(parent);
+        if (editingHex.equalsIgnoreCase(initial)) {
+            ClientPlatform.show(minecraft, parent);
+        } else {
+            var change = Component.translatable("hud.core.color_change", title, initial, editingHex);
+            ClientPlatform.show(minecraft, new DiscardChangesScreen(this, java.util.List.of(change),
+                () -> ClientPlatform.show(minecraft, parent)));
+        }
     }
 
     @Override

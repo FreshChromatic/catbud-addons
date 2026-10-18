@@ -21,6 +21,9 @@ public final class SettingsScreen extends Screen {
     private final Map<String, SettingsValues> drafts           = new LinkedHashMap<>();
     private final Set<String>                 expandedSections = new HashSet<>();
 
+    private final Map<String, HudElementConfig> hudDraft          = new LinkedHashMap<>();
+    private final Map<String, String>           unfinishedNumbers = new LinkedHashMap<>();
+
     private String    addonId = "core", category = "general", query = "";
     private Component notice  = Component.empty();
 
@@ -33,6 +36,13 @@ public final class SettingsScreen extends Screen {
     public SettingsScreen(Screen parent) {
         super(Component.translatable("screen.catbud_core.settings"));
         this.parent = parent;
+        hudDraft.putAll(CatbudCore.hudStore().current());
+        for (HudElement element : CatbudCore.huds().elements(hudDraft)) {
+            hudDraft.putIfAbsent(element.id(), element.defaults());
+        }
+        if (CatbudCore.hudStore().warning()) {
+            notice = Component.translatable("config.catbud_core.load_failed");
+        }
         for (var addon : CatbudCore.addons()) {
             drafts.put(addon.id(), addon.store().current());
             if (addon.store().loadWarning() != null) {
@@ -75,7 +85,7 @@ public final class SettingsScreen extends Screen {
                 }, () -> addonId.equals(id), false, null));
         }
         int categoryY = panelY + 14 + ((tabs.size() + tabsPerRow - 1) / tabsPerRow) * 22;
-        List<String> categories = addon() == null ? List.of("general", "about") : addon().categories();
+        List<String> categories = addon() == null ? List.of("general", "hud", "about") : addon().categories();
         int categoriesPerRow = Math.max(1, usable / 48), tabX = left;
         for (int i = 0; i < categories.size(); i++) {
             String id = categories.get(i);
@@ -119,10 +129,21 @@ public final class SettingsScreen extends Screen {
         int small = Math.min(96, usable / 4 - 4);
         reset = addRenderableWidget(new PanelButton(left + usable - small, buttonY, small, 20, Component.translatable(
             "screen.catbud_core.reset"), b -> {
-                drafts.get(addonId).reset(category);
+                if (addon() != null) {
+                    drafts.get(addonId).reset(category);
+                    addon().settings().stream().filter(setting -> setting.category().equals(category)).forEach(
+                        setting -> unfinishedNumbers.remove(addonId + ":" + setting.id()));
+                }
+                if (category.equals("hud")) {
+                    for (HudElement element : CatbudCore.huds().elements(hudDraft)) {
+                        if (addon() == null || element.addonId().equals(addonId)) {
+                            hudDraft.put(element.id(), element.defaults());
+                        }
+                    }
+                }
                 populate();
             }));
-        reset.active = addon() != null && !category.equals("status") && query.isBlank();
+        reset.active = (addon() != null || category.equals("hud")) && !category.equals("status") && query.isBlank();
         addRenderableWidget(new PanelButton(left + small + 4, buttonY, small, 20, Component.translatable("gui.cancel"),
             b -> onClose()));
         addRenderableWidget(new PanelButton(left + small * 2 + 8, buttonY, small, 20, Component.translatable(
@@ -135,6 +156,10 @@ public final class SettingsScreen extends Screen {
     }
 
     private boolean apply() {
+        if (!unfinishedNumbers.isEmpty()) {
+            notice = Component.translatable("config.catbud_core.invalid_number");
+            return false;
+        }
         for (Row row : rows.children()) {
             if (row.invalidNumber) {
                 notice = Component.translatable("config.catbud_core.invalid_number");
@@ -165,9 +190,36 @@ public final class SettingsScreen extends Screen {
                 return false;
             }
         }
+        try {
+            if (!hudDraft.equals(CatbudCore.hudStore().current()) || CatbudCore.hudStore().warning()) {
+                CatbudCore.hudStore().apply(hudDraft);
+            }
+        } catch (IOException error) {
+            notice = Component.translatable("config.catbud_core.save_failed", Component.translatable(
+                "hud.core.editor"));
+            return false;
+        }
         notice = Component.translatable("config.catbud_core.saved");
         populate();
         return true;
+    }
+
+    private void addHudRows() {
+        Component label = Component.translatable("hud.core.editor");
+        rows.add(new Row(new SettingsAddon.StatusRow(label, () -> label, () -> ClientPlatform.show(minecraft,
+            new HudEditorScreen(this, hudDraft, addon() == null ? null : addonId, next -> {
+                hudDraft.clear();
+                hudDraft.putAll(next);
+            })), () -> true, () -> Component.translatable("hud.core.editor_help"))));
+        for (HudElement element : CatbudCore.huds().elements(hudDraft)) {
+            if (addon() == null || element.addonId().equals(addonId)) {
+                rows.add(new Row(new SettingsAddon.StatusRow(element.name(), element::name, () -> {
+                    var current = hudDraft.get(element.id());
+                    hudDraft.put(element.id(), current.withEnabled(!current.enabled()));
+                }, () -> true, () -> Component.translatable("hud.core.visibility_help"), () -> hudDraft.get(element
+                    .id()).enabled())));
+            }
+        }
     }
 
     private void populate() {
@@ -185,6 +237,8 @@ public final class SettingsScreen extends Screen {
                         new ControlsScreen(this, minecraft.options)), () -> true, () -> Component.empty())));
                 rows.add(new Row(SettingsAddon.StatusRow.info(Component.translatable("screen.catbud_core.language"),
                     () -> Component.translatable("screen.catbud_core.follow_language"))));
+            } else if (category.equals("hud")) {
+                addHudRows();
             } else {
                 rows.add(new Row(SettingsAddon.StatusRow.info(Component.translatable("addon.catbud_core.core"),
                     () -> Component.literal("1.0.3"))));
@@ -206,6 +260,9 @@ public final class SettingsScreen extends Screen {
             }
             if (needle.isEmpty()) {
                 addon().extraRows().apply(category).forEach(this::addStatusRow);
+                if (category.equals("hud")) {
+                    addHudRows();
+                }
             }
             if (needle.isEmpty() && category.equals("general")) {
                 rows.add(new Row(new SettingsAddon.StatusRow(Component.translatable("screen.catbud_core.controls"),
@@ -220,7 +277,7 @@ public final class SettingsScreen extends Screen {
         }
         rows.setScrollAmount(scroll);
         if (reset != null) {
-            reset.active = addon() != null && !category.equals("status") && query.isBlank();
+            reset.active = (addon() != null || category.equals("hud")) && !category.equals("status") && query.isBlank();
         }
     }
 
@@ -239,9 +296,39 @@ public final class SettingsScreen extends Screen {
         }
     }
 
+    private List<Component> changes() {
+        Map<String, HudElementConfig> savedHud = new LinkedHashMap<>(CatbudCore.hudStore().current());
+        for (HudElement element : CatbudCore.huds().elements()) {
+            savedHud.putIfAbsent(element.id(), element.defaults());
+        }
+        List<Component> changes = new ArrayList<>(HudChanges.describe(CatbudCore.huds(), savedHud, hudDraft));
+        for (var addon : CatbudCore.addons()) {
+            var before = addon.store().current().json();
+            var after = drafts.get(addon.id()).json();
+            for (Setting setting : addon.settings()) {
+                String unfinished = unfinishedNumbers.get(addon.id() + ":" + setting.id());
+                if (unfinished != null) {
+                    changes.add(Component.translatable("hud.core.invalid_change", setting.label(addon.id()),
+                        unfinished));
+                }
+                if (!Objects.equals(before.get(setting.id()), after.get(setting.id()))) {
+                    changes.add(Component.translatable("hud.core.change", addon.name(), setting.label(addon.id()),
+                        before.get(setting.id()).getAsString(), after.get(setting.id()).getAsString()));
+                }
+            }
+        }
+        return changes;
+    }
+
     @Override
     public void onClose() {
-        minecraft.setScreen(parent);
+        List<Component> changes = changes();
+        if (changes.isEmpty()) {
+            ClientPlatform.show(minecraft, parent);
+        } else {
+            ClientPlatform.show(minecraft, new DiscardChangesScreen(this, changes, () -> ClientPlatform.show(minecraft,
+                parent)));
+        }
     }
 
     @Override
@@ -392,6 +479,7 @@ public final class SettingsScreen extends Screen {
                             ((EditBox) widgets.getLast()).setValue(format(displayNumber(s, values.number(s.id()))));
                         }
                     });
+                    String draftKey = addonId + ":" + s.id();
                     EditBox input = new EditBox(font, 0, 0, 55, 20, s.label(addonId));
                     input.setValue(format(displayNumber(s, values.number(s.id()))));
                     input.setResponder(text -> {
@@ -399,6 +487,11 @@ public final class SettingsScreen extends Screen {
                             double n = Double.parseDouble(text) / (s.id().endsWith("opacity") ? 100 : 1);
                             boolean valid = Double.isFinite(n) && n >= s.min() && n <= s.max();
                             invalidNumber = !valid;
+                            if (valid) {
+                                unfinishedNumbers.remove(draftKey);
+                            } else {
+                                unfinishedNumbers.put(draftKey, text);
+                            }
                             input.setTextColor(valid ? 0xFFE0E0E0 : 0xFFFF7777);
                             if (valid) {
                                 values.set(s, new JsonPrimitive(n));
@@ -410,9 +503,13 @@ public final class SettingsScreen extends Screen {
                             }
                         } catch (NumberFormatException e) {
                             invalidNumber = true;
+                            unfinishedNumbers.put(draftKey, text);
                             input.setTextColor(0xFFFF7777);
                         }
                     });
+                    if (unfinishedNumbers.containsKey(draftKey)) {
+                        input.setValue(unfinishedNumbers.get(draftKey));
+                    }
                     widgets.add(input);
                 }
             }

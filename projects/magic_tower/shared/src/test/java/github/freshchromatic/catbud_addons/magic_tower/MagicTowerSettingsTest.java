@@ -105,7 +105,7 @@ class MagicTowerSettingsTest {
 
     @Test
     void schemaHasNoPerformanceOrDebugControls() {
-        assertEquals(java.util.Set.of("general", "radar", "esp", "routes", "hints"), MagicTowerSettings.schema()
+        assertEquals(java.util.Set.of("general", "hud", "radar", "esp", "routes", "hints"), MagicTowerSettings.schema()
             .stream().map(Setting::category).collect(java.util.stream.Collectors.toSet()));
         assertTrue(MagicTowerSettings.schema().stream().noneMatch(s -> s.category().equals("performance") || s.id()
             .contains("debug")));

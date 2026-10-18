@@ -236,7 +236,6 @@ final class TargetLines {
             return;
         }
         if (!session.isActive()) {
-            message(client, "message.catbud_addons.inactive");
             return;
         }
         WorldTargets targets = session.targets();

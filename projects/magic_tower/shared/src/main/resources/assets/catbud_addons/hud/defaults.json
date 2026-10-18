@@ -1,0 +1,200 @@
+{
+  "configVersion": 1,
+  "elements": {
+    "catbud_addons:tower_floor": {
+      "enabled": true,
+      "locked": false,
+      "placement": {
+        "anchor": "TOP_LEFT",
+        "x": 0.0,
+        "y": 0.0,
+        "scale": 0.8,
+        "relativeTo": "catbud_addons:tower_coins",
+        "relativeAnchor": "TOP_RIGHT",
+        "guiScale": 0.0
+      },
+      "style": {
+        "font": "MINECRAFT",
+        "textScale": 1.0,
+        "bold": false,
+        "italic": false,
+        "textColor": -1446156,
+        "background": false,
+        "backgroundColor": -1508632544,
+        "radius": 5.0,
+        "textShadow": {
+          "enabled": true,
+          "color": -2147483648,
+          "x": 1.0,
+          "y": 1.0,
+          "blur": 0.0
+        },
+        "boxShadow": {
+          "enabled": false,
+          "color": 1073741824,
+          "x": 0.0,
+          "y": 1.0,
+          "blur": 2.0
+        },
+        "padding": {
+          "top": 5.0,
+          "right": 8.0,
+          "bottom": 5.0,
+          "left": 8.0
+        },
+        "iconSize": 12.0,
+        "iconGap": 5.0,
+        "lineGap": 2.0,
+        "alignment": "CENTER",
+        "fixedWidth": 64.0,
+        "fixedHeight": 30.0,
+        "backgroundGroup": "tower_status_bar",
+        "formatting": {
+          "underline": false,
+          "letterCase": "ORIGINAL",
+          "prefix": "",
+          "suffix": "",
+          "brackets": false,
+          "weight": "REGULAR"
+        },
+        "chroma": {
+          "textSpeed": 0.0,
+          "backgroundSpeed": 0.0,
+          "textShadowSpeed": 0.0,
+          "boxShadowSpeed": 0.0
+        }
+      },
+      "deleted": false
+    },
+    "catbud_addons:tower_coins": {
+      "enabled": true,
+      "locked": false,
+      "placement": {
+        "anchor": "TOP",
+        "x": -64.0,
+        "y": 22.0,
+        "scale": 0.8,
+        "relativeTo": "",
+        "relativeAnchor": "TOP_RIGHT",
+        "guiScale": 0.0
+      },
+      "style": {
+        "font": "MINECRAFT",
+        "textScale": 1.0,
+        "bold": false,
+        "italic": false,
+        "textColor": -797046,
+        "background": false,
+        "backgroundColor": -1508632544,
+        "radius": 5.0,
+        "textShadow": {
+          "enabled": true,
+          "color": -2147483648,
+          "x": 1.0,
+          "y": 1.0,
+          "blur": 0.0
+        },
+        "boxShadow": {
+          "enabled": false,
+          "color": 1073741824,
+          "x": 0.0,
+          "y": 1.0,
+          "blur": 2.0
+        },
+        "padding": {
+          "top": 5.0,
+          "right": 8.0,
+          "bottom": 5.0,
+          "left": 8.0
+        },
+        "iconSize": 12.0,
+        "iconGap": 5.0,
+        "lineGap": 2.0,
+        "alignment": "LEFT",
+        "fixedWidth": 100.0,
+        "fixedHeight": 30.0,
+        "backgroundGroup": "tower_status_bar",
+        "formatting": {
+          "underline": false,
+          "letterCase": "ORIGINAL",
+          "prefix": "",
+          "suffix": "",
+          "brackets": false,
+          "weight": "REGULAR"
+        },
+        "chroma": {
+          "textSpeed": 0.0,
+          "backgroundSpeed": 0.0,
+          "textShadowSpeed": 0.0,
+          "boxShadowSpeed": 0.0
+        }
+      },
+      "deleted": false
+    },
+    "catbud_addons:tower_evacuation": {
+      "enabled": true,
+      "locked": false,
+      "placement": {
+        "anchor": "TOP_LEFT",
+        "x": 0.0,
+        "y": 0.0,
+        "scale": 0.8,
+        "relativeTo": "catbud_addons:tower_floor",
+        "relativeAnchor": "TOP_RIGHT",
+        "guiScale": 0.0
+      },
+      "style": {
+        "font": "MINECRAFT",
+        "textScale": 1.0,
+        "bold": false,
+        "italic": false,
+        "textColor": -2827035,
+        "background": false,
+        "backgroundColor": -1508632544,
+        "radius": 5.0,
+        "textShadow": {
+          "enabled": true,
+          "color": -2147483648,
+          "x": 1.0,
+          "y": 1.0,
+          "blur": 0.0
+        },
+        "boxShadow": {
+          "enabled": false,
+          "color": 1073741824,
+          "x": 0.0,
+          "y": 1.0,
+          "blur": 2.0
+        },
+        "padding": {
+          "top": 5.0,
+          "right": 8.0,
+          "bottom": 5.0,
+          "left": 8.0
+        },
+        "iconSize": 12.0,
+        "iconGap": 5.0,
+        "lineGap": 2.0,
+        "alignment": "CENTER",
+        "fixedWidth": 96.0,
+        "fixedHeight": 30.0,
+        "backgroundGroup": "tower_status_bar",
+        "formatting": {
+          "underline": false,
+          "letterCase": "ORIGINAL",
+          "prefix": "",
+          "suffix": "",
+          "brackets": false,
+          "weight": "REGULAR"
+        },
+        "chroma": {
+          "textSpeed": 0.0,
+          "backgroundSpeed": 0.0,
+          "textShadowSpeed": 0.0,
+          "boxShadowSpeed": 0.0
+        }
+      },
+      "deleted": false
+    }
+  }
+}

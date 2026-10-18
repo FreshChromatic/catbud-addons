@@ -1,0 +1,8 @@
+Noto Sans TC
+Source: https://github.com/google/fonts/tree/main/ofl/notosanstc
+Original font: NotoSansTC[wght].ttf
+The bundled font was instantiated at weight 400 using fontTools.varLib.instancer.
+It contains the full original character repertoire, with Minecraft's default font as fallback.
+License: SIL Open Font License 1.1; see ofl-notosanstc.txt in this directory.
+
+Additional static instances at weights 500, 600 and 700 are derived from the same Noto Sans TC variable font. Minecraft uses regular/bold for its bitmap font.

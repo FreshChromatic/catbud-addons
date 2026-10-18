@@ -1,0 +1,16 @@
+{
+  "required": true,
+  "package": "github.freshchromatic.catbud_addons.monster_wave.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "client": [
+    "ClientPacketListenerMixin",
+    "ConnectionAccessor",
+    "ClientCommonPacketListenerMixin",
+    "MinecraftDisconnectMixin",
+    "MinecraftFrameAccessor",
+    "SectionOcclusionGraphMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "providers": [
+    {
+      "type": "ttf",
+      "file": "catbud_core:noto_sans_tc_semibold.ttf",
+      "shift": [
+        0,
+        0
+      ],
+      "size": 9,
+      "oversample": 2
+    },
+    {
+      "type": "reference",
+      "id": "minecraft:default"
+    }
+  ]
+}

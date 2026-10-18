@@ -67,6 +67,9 @@ final class MagicTowerSettings {
         Predicate<SettingsValues> manual = v -> routes.test(v) && v.bool("routes.manual");
         Predicate<SettingsValues> hints = v -> routes.test(v) && v.bool("hints.enabled");
         s.add(Setting.toggle("enabled", "general", true, always));
+        s.add(Setting.toggle("hud.coins.count", "hud", true, enabled));
+        s.add(Setting.toggle("hud.coins.capacity", "hud", true, enabled));
+        s.add(Setting.toggle("hud.coins.singleLine", "hud", false, enabled));
         s.add(Setting.toggle("radar.enabled", "radar", true, enabled));
         for (String id : List.of("nether", "end", "coin", "enchantment", "distanceText", "arrows", "vertical")) {
             s.add(Setting.toggle("radar." + id, "radar", true, radar));
@@ -142,7 +145,7 @@ final class MagicTowerSettings {
         String version = FabricLoader.getInstance().getModContainer("catbud_addons").orElseThrow().getMetadata()
             .getVersion().getFriendlyString();
         CatbudCore.register(new SettingsAddon("magic_tower", Component.literal("Magic Tower"), version, List.of(
-            "general", "radar", "esp", "routes", "hints", "status"), schema, store, MagicTowerSettings::status,
+            "general", "hud", "radar", "esp", "routes", "hints", "status"), schema, store, MagicTowerSettings::status,
             category -> category.equals("general") ? List.of(SettingsAddon.StatusRow.info(Component.translatable(
                 "key.catbud_addons.toggle_target_line"), CatbudAddonsClient::targetKeyName)) : List.of()));
     }

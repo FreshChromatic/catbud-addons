@@ -28,6 +28,7 @@ tasks.register('formatJava', JavaExec) {
     description = 'Format project Java sources using the SunLight-inspired project profile.'
     classpath = sourceSets.main.runtimeClasspath
     mainClass = 'github.freshchromatic.catbud_addons.formatting.JavaFormatter'
+    workingDir workspace
     args new File(workspace, 'tools/java-format.properties').absolutePath
     if (project.hasProperty('checkFormat')) {
         args '--check'
@@ -39,5 +40,5 @@ tasks.register('formatJava', JavaExec) {
         include '**/*.java'
         exclude '**/build/**'
     }
-    args sources.files.sort { it.absolutePath }.collect { it.absolutePath }
+    args sources.files.sort { it.absolutePath }.collect { workspace.toPath().relativize(it.toPath()).toString() }
 }

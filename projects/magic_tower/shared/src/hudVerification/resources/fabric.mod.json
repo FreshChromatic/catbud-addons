@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "id": "catbud_hud_verification",
+  "version": "1.0.3",
+  "name": "Catbud HUD Verification",
+  "environment": "client",
+  "entrypoints": { "client": ["github.freshchromatic.catbud_addons.magic_tower.HudVerificationClient"] },
+  "depends": { "catbud_addons": "*", "catbud_core": "*" }
+}
