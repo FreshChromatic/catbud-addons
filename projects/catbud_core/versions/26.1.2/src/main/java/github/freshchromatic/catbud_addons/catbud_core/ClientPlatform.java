@@ -11,6 +11,17 @@ import org.joml.Vector3fc;
 
 public final class ClientPlatform {
 
+    public static void updateToast(Minecraft client, net.minecraft.network.chat.Component title, net.minecraft.network.chat.Component body) {
+        net.minecraft.client.gui.components.toasts.SystemToast.add(client.getToastManager(),
+            new net.minecraft.client.gui.components.toasts.SystemToast.SystemToastId(), title, body);
+    }
+
+    public static void updateMessage(Minecraft client, net.minecraft.network.chat.Component message) {
+        if (client.player != null) {
+            client.player.sendSystemMessage(message);
+        }
+    }
+
     public static boolean hudHidden(Minecraft client) {
         return client.options.hideGui;
     }

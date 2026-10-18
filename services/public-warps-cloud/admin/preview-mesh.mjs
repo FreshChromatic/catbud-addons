@@ -63,13 +63,27 @@ const sides = [
 let snapshot;
 
 function color(state) {
-  if (/water|ice/.test(state)) return [90, 154, 188];
-  if (/grass|leaves|moss|vine/.test(state)) return [110, 145, 78];
-  if (/sand|birch|end_stone/.test(state)) return [212, 200, 153];
-  if (/wood|log|planks|dirt/.test(state)) return [149, 114, 79];
-  if (/lava|magma|fire/.test(state)) return [219, 135, 74];
-  if (/red|nether|brick/.test(state)) return [167, 106, 97];
-  if (/glass/.test(state)) return [156, 190, 182];
+  if (/water|ice/.test(state)) {
+return [90, 154, 188];
+}
+  if (/grass|leaves|moss|vine/.test(state)) {
+return [110, 145, 78];
+}
+  if (/sand|birch|end_stone/.test(state)) {
+return [212, 200, 153];
+}
+  if (/wood|log|planks|dirt/.test(state)) {
+return [149, 114, 79];
+}
+  if (/lava|magma|fire/.test(state)) {
+return [219, 135, 74];
+}
+  if (/red|nether|brick/.test(state)) {
+return [167, 106, 97];
+}
+  if (/glass/.test(state)) {
+return [156, 190, 182];
+}
   return [153, 162, 160];
 }
 
@@ -80,7 +94,9 @@ async function decode(bytes) {
   let length = 0;
   while (true) {
     const { done, value } = await reader.read();
-    if (done) break;
+    if (done) {
+break;
+}
     length += value.length;
     if (length > 1048576) {
       await reader.cancel();
@@ -129,20 +145,26 @@ function mesh(height) {
   for (let y = 0; y < top; y++) {
     for (let z = 0; z < depth; z++) {
       for (let x = 0; x < width; x++) {
-        if (air(x, y, z)) continue;
+        if (air(x, y, z)) {
+continue;
+}
         const rgb = color(palette[blocks[(y * depth + z) * width + x]]);
         for (const side of sides) {
-          if (!air(x + side.step[0], y + side.step[1], z + side.step[2])) continue;
+          if (!air(x + side.step[0], y + side.step[1], z + side.step[2])) {
+continue;
+}
           if (colors.length >= 72000) {
             reduced = true;
             continue;
           }
           for (const point of side.points)
-            positions.push(
+            {
+positions.push(
               x + point[0] - width / 2,
               y + point[1] - snapshot.height / 2,
               z + point[2] - depth / 2,
             );
+}
           colors.push(...rgb.map((channel) => Math.round(channel * side.light)));
         }
       }
@@ -174,7 +196,9 @@ function mesh(height) {
 
 self.onmessage = async ({ data }) => {
   try {
-    if (data.bytes) snapshot = await decode(data.bytes);
+    if (data.bytes) {
+snapshot = await decode(data.bytes);
+}
     const result = mesh(data.height ?? snapshot.height);
     self.postMessage({ id: data.id, ...result }, [result.positions.buffer, result.colors.buffer]);
   } catch (error) {

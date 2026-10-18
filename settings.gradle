@@ -5,6 +5,8 @@ pluginManagement {
     }
 }
 rootProject.name = 'catbud-addons'
+include 'update-engine'
+project(':update-engine').projectDir = file('projects/update-engine')
 ['catbud_core', 'magic_tower', 'public_warps', 'monster_wave'].each { module ->
     ['1.21.11', '26.1.2', '26.2', '26.3'].each { mc ->
         def path = ":projects:${module}:${mc}"

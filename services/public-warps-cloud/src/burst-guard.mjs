@@ -4,6 +4,7 @@ export const localRateLimits = {
   ORIGIN_BURST: { namespace_id: '4690101', simple: { limit: 6000, period: 60 } },
   PUBLIC_BURST: { namespace_id: '4690102', simple: { limit: 600, period: 60 } },
   WRITE_BURST: { namespace_id: '4690103', simple: { limit: 120, period: 60 } },
+  ADDON_BURST: { namespace_id: '4690104', simple: { limit: 300, period: 60 } },
 };
 
 export class BurstGuard {
@@ -23,6 +24,9 @@ export class BurstGuard {
 
   async reject(request) {
     try {
+      if (new URL(request.url).pathname.startsWith('/addons/v1/')) {
+        await this.require('ADDON_BURST', 'addon-requests');
+      }
       await this.require('ORIGIN_BURST', 'requests');
       const address = request.headers.get('CF-Connecting-IP') ?? '';
       const valid = address.length <= 45 && /^[0-9a-f:.]+$/i.test(address);

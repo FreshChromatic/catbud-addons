@@ -1,0 +1,40 @@
+sourceSets {
+    verification {
+        java.srcDirs = [file('../../shared/src/updateVerification/java'), file('src/updateVerification/java')]
+        resources.srcDir file('../../shared/src/updateVerification/resources')
+        compileClasspath += sourceSets.main.output + sourceSets.main.compileClasspath
+        runtimeClasspath += sourceSets.main.output + sourceSets.main.runtimeClasspath
+    }
+}
+configurations.verificationImplementation.extendsFrom(configurations.implementation)
+configurations.verificationRuntimeOnly.extendsFrom(configurations.runtimeOnly)
+loom {
+    mods {
+        catbud_core { sourceSet sourceSets.main }
+        catbud_update_verification { sourceSet sourceSets.verification }
+    }
+    runs {
+        client {
+            source sourceSets.verification
+            runDir 'build/verification-updates'
+        }
+    }
+}
+tasks.named('runClient') {
+    dependsOn tasks.named('verificationClasses')
+    doFirst {
+        def game = file('build/verification-updates')
+        def mods = new File(game, 'mods')
+        def updates = new File(game, 'config/catbud/updates')
+        mods.mkdirs()
+        updates.mkdirs()
+        def helper = project(':update-engine').tasks.named('installerJar').get().archiveFile.get().asFile
+        def java = new File(System.getProperty('java.home'), 'bin/java.exe')
+        if (!java.exists()) {
+            java = new File(System.getProperty('java.home'), 'bin/java')
+        }
+        providers.exec {
+            commandLine java.absolutePath, '-jar', helper.absolutePath, 'guard', mods.canonicalPath, updates.canonicalPath
+        }.result.get().assertNormalExitValue()
+    }
+}

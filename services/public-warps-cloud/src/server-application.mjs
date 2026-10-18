@@ -61,7 +61,9 @@ export class ServerApplication {
           .prepare('SELECT * FROM server_submissions WHERE server_id=? AND id=? AND contributor=?')
           .bind(serverId, route.split('/')[1], actor.id)
           .first();
-        if (!row) throw new ApiError(404, 'Submission not found for this server and contributor');
+        if (!row) {
+          throw new ApiError(404, 'Submission not found for this server and contributor');
+        }
         const state =
           row.state === 'pending' && row.expires_at <= this.budgets.now ? 'expired' : row.state;
         return json({

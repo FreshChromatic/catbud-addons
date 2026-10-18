@@ -8,6 +8,7 @@ import { ManagementQueries } from './management-queries.mjs';
 import { ManagementActions } from './management-actions.mjs';
 import { ManagementStatus } from './management-status.mjs';
 import { requireManagementRequest } from './management-request.mjs';
+import { AddonManagementApplication } from './addons/addon-management-application.mjs';
 
 export class ManagementApplication {
   constructor(env, now = Date.now(), verifier = new AccessVerifier(env, now)) {
@@ -54,6 +55,9 @@ export class ManagementApplication {
 
   async dispatch(request, identity) {
     const url = new URL(request.url);
+    if (url.pathname.startsWith('/api/addons/')) {
+      return new AddonManagementApplication(this.env, this.now).handle(request, identity);
+    }
     if (!url.pathname.startsWith('/api/')) {
       if (request.method !== 'GET' && request.method !== 'HEAD') {
         throw new ApiError(404, 'Route not found');

@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "id": "catbud_update_verification",
+  "version": "1.0.0",
+  "name": "Catbud Update Verification",
+  "environment": "client",
+  "entrypoints": { "client": ["github.freshchromatic.catbud_addons.catbud_core.UpdateVerificationClient"] }
+}

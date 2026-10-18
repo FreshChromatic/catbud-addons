@@ -58,7 +58,9 @@ test('official ownership permits only same-server own metadata with bounded repl
     { DB: database, POSTING_ENABLED: 'true' },
     now,
     async () => {
-      if (qualificationDown) throw new Error('qualification offline');
+      if (qualificationDown) {
+        throw new Error('qualification offline');
+      }
       return Response.json({ uuid, name: 'YuzuCha323', pass: activePass });
     },
     () => {},

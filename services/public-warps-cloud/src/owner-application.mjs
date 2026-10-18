@@ -32,16 +32,20 @@ export class OwnerApplication {
     ) {
       throw new ApiError(404, 'Owner route not found');
     }
-    if (this.application.env.POSTING_ENABLED !== 'true')
+    if (this.application.env.POSTING_ENABLED !== 'true') {
       throw new ApiError(503, 'Editing is temporarily disabled', 60);
-    if (!request.headers.get('Content-Type')?.startsWith('application/json'))
+    }
+    if (!request.headers.get('Content-Type')?.startsWith('application/json')) {
       throw new ApiError(415, 'JSON is required');
+    }
     const value = await requestJson(request, 4096);
-    if (!value || Array.isArray(value) || typeof value !== 'object')
+    if (!value || Array.isArray(value) || typeof value !== 'object') {
       throw new ApiError(400, 'An object is required');
+    }
     if (route === 'owner/challenge') {
-      if (Object.keys(value).some((key) => !['uuid', 'name', 'clientNonce'].includes(key)))
+      if (Object.keys(value).some((key) => !['uuid', 'name', 'clientNonce'].includes(key))) {
         throw new ApiError(400, 'Invalid challenge fields');
+      }
       return json(await this.identity.challenge(serverId, value, request));
     }
     if (route === 'owner/verify') {
@@ -49,8 +53,9 @@ export class OwnerApplication {
         Object.keys(value).some(
           (key) => !['challengeId', 'proofKey', 'certificate', 'signature'].includes(key),
         )
-      )
+      ) {
         throw new ApiError(400, 'Invalid verification fields');
+      }
       return json(await this.identity.verify(serverId, value, new URL(request.url).origin));
     }
     return json(await this.editing.update(await this.identity.require(serverId, request), value));

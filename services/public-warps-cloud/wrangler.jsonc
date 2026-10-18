@@ -22,6 +22,11 @@
   },
   "ratelimits": [
     {
+      "name": "ADDON_BURST",
+      "namespace_id": "77029289",
+      "simple": { "limit": 300, "period": 60 },
+    },
+    {
       "name": "ORIGIN_BURST",
       "namespace_id": "77029288",
       "simple": {

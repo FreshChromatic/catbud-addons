@@ -19,6 +19,11 @@ public final class CatbudCore implements ClientModInitializer {
     private static KeyMapping                       openKey;
     private static SettingsStore                    coreStore;
     private static HudConfigStore                   hudStore;
+    private static AddonUpdateClient                updates;
+
+    public static AddonUpdateClient updates() {
+        return updates;
+    }
 
     public static HudRegistry huds() {
         return HUDS;
@@ -59,6 +64,9 @@ public final class CatbudCore implements ClientModInitializer {
 
     @Override
     public void onInitializeClient() {
+        updates = new AddonUpdateClient();
+        net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents.CLIENT_STOPPING.register(
+            client -> updates.close());
         hudStore = new HudConfigStore(FabricLoader.getInstance().getConfigDir().resolve("catbud/hud.json"));
         net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry.addLast(Identifier.fromNamespaceAndPath(
             "catbud_core", "elements"), (graphics, delta) -> HudRenderer.renderGame(new HudGraphics(graphics)));
@@ -69,6 +77,7 @@ public final class CatbudCore implements ClientModInitializer {
             "key.catbud_core.open_settings", InputConstants.KEY_Z, Identifier.fromNamespaceAndPath("catbud_core",
                 "general"));
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
+            updates.tick(client);
             while (openKey.consumeClick()) {
                 if (ClientPlatform.screen(client) == null && client.player != null) {
                     ClientPlatform.show(client, screen(null));

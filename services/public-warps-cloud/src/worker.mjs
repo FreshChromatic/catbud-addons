@@ -9,6 +9,8 @@ import { ServerApplication } from './server-application.mjs';
 import { LegacyApplication } from './legacy-application.mjs';
 import { ServerMaintenance } from './server-maintenance.mjs';
 import { ServerQualification } from './server-qualification.mjs';
+import { AddonPublicApplication } from './addons/addon-public-application.mjs';
+import { AddonMaintenance } from './addons/addon-maintenance.mjs';
 
 export class WarpApplication {
   constructor(
@@ -26,6 +28,11 @@ export class WarpApplication {
 
   async handle(request) {
     const path = new URL(request.url).pathname;
+    if (path.startsWith('/addons/v1/')) {
+      return this.measure('addon-' + path.split('/').at(-1), (application) =>
+        new AddonPublicApplication(application.database, application.budgets.now).handle(request),
+      );
+    }
     let operation = path === '/internal/admin' ? 'admin' : path.split('/').at(-1);
     if (/\/(previews|snapshots)\//.test(path)) {
       operation = 'preview';
@@ -128,5 +135,6 @@ export default {
   },
   async scheduled(event, env, context) {
     context.waitUntil(new WarpApplication(env).scheduled());
+    context.waitUntil(new AddonMaintenance(env).run());
   },
 };

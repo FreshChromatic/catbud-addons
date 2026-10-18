@@ -25,7 +25,9 @@ export class PreviewView {
     label.append(this.height);
     container.append(this.canvas, this.note, label);
     this.worker.onmessage = ({ data }) => {
-      if (data.id !== this.serial) return;
+      if (data.id !== this.serial) {
+return;
+}
       if (data.error) {
         this.note.textContent = data.error;
         onError();
@@ -49,7 +51,9 @@ export class PreviewView {
       this.canvas.setPointerCapture(event.pointerId);
     };
     this.canvas.onpointermove = (event) => {
-      if (!pointer) return;
+      if (!pointer) {
+return;
+}
       this.yaw += (event.clientX - pointer[0]) * 0.01;
       this.pitch = Math.max(-1.4, Math.min(1.4, this.pitch + (event.clientY - pointer[1]) * 0.01));
       pointer = [event.clientX, event.clientY];
@@ -83,7 +87,9 @@ export class PreviewView {
   }
 
   draw() {
-    if (!this.mesh) return;
+    if (!this.mesh) {
+return;
+}
     const ratio = Math.min(devicePixelRatio || 1, 2);
     const width = this.canvas.clientWidth;
     const height = this.canvas.clientHeight;
@@ -107,7 +113,9 @@ export class PreviewView {
     const { positions, colors } = this.mesh;
     for (let i = 0; i < positions.length; i += 12) {
       const points = [];
-      for (let j = 0; j < 12; j += 3) points.push(project(...positions.subarray(i + j, i + j + 3)));
+      for (let j = 0; j < 12; j += 3) {
+points.push(project(...positions.subarray(i + j, i + j + 3)));
+}
       faces.push({
         points,
         depth: points.reduce((sum, point) => sum + point[2], 0),

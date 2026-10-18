@@ -1,0 +1,49 @@
+plugins {
+    id 'java-library'
+}
+version = rootProject.mod_version
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
+}
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+    options.release = 21
+}
+dependencies {
+    implementation 'com.google.code.gson:gson:2.11.0'
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.11.4'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+test {
+    useJUnitPlatform()
+    dependsOn 'installerJar'
+    systemProperty 'catbud.installerJar', layout.buildDirectory.file('libs/catbud-update-installer.jar').get().asFile.absolutePath
+}
+tasks.register('installerJar', Jar) {
+    dependsOn classes
+    archiveFileName = 'catbud-update-installer.jar'
+    from sourceSets.main.output
+    include 'github/freshchromatic/catbud_addons/update/install/**'
+    manifest {
+        attributes 'Main-Class': 'github.freshchromatic.catbud_addons.update.install.InstallerMain'
+    }
+}
+tasks.register('releaseManifest', JavaExec) {
+    dependsOn classes
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'github.freshchromatic.catbud_addons.update.release.ReleaseTool'
+    workingDir rootProject.projectDir
+    args 'manifest', (project.findProperty('releaseVersion') ?: ''), (project.findProperty('releaseCommit') ?: ''),
+        (project.findProperty('releaseSigningKey') ?: ''), (project.findProperty('releaseKeyId') ?: ''),
+        (project.findProperty('releaseArtifactDirectory') ?: 'out'), (project.findProperty('releaseOutputDirectory') ?: ''),
+        (project.findProperty('releaseNotesFile') ?: ''), (project.findProperty('releaseKeysFile') ?: 'release/keys.json')
+}
+tasks.register('releaseKeys', JavaExec) {
+    dependsOn classes
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'github.freshchromatic.catbud_addons.update.release.ReleaseTool'
+    workingDir rootProject.projectDir
+    args 'keygen', (project.findProperty('releaseKeyDirectory') ?: ''), (project.findProperty('releaseKeyId') ?: '')
+}

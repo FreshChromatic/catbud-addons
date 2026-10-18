@@ -4,8 +4,13 @@ import { ApiError } from './protocol.mjs';
 const RSA = 'RSASSA-PKCS1-v1_5';
 
 function decoded(value, maximum) {
-  if (typeof value !== 'string' || value.length > maximum || !/^[A-Za-z0-9+/]+={0,2}$/.test(value))
+  if (
+    typeof value !== 'string' ||
+    value.length > maximum ||
+    !/^[A-Za-z0-9+/]+={0,2}$/.test(value)
+  ) {
     throw new ApiError(401, 'Invalid account certificate');
+  }
   return Uint8Array.from(atob(value), (character) => character.charCodeAt(0));
 }
 
@@ -22,11 +27,13 @@ export class OfficialCertificateVerifier {
       typeof certificate !== 'object' ||
       Array.isArray(certificate) ||
       Object.keys(certificate).some((key) => !['publicKey', 'expiresAt', 'signature'].includes(key))
-    )
+    ) {
       throw new ApiError(401, 'An official account certificate is required');
+    }
     const expiry = certificate.expiresAt;
-    if (!Number.isSafeInteger(expiry) || expiry <= this.now)
+    if (!Number.isSafeInteger(expiry) || expiry <= this.now) {
       throw new ApiError(401, 'Account certificate expired or invalid');
+    }
     try {
       const publicKey = decoded(certificate.publicKey, 1024);
       const certificateSignature = decoded(certificate.signature, 1024);
@@ -53,7 +60,9 @@ export class OfficialCertificateVerifier {
           break;
         }
       }
-      if (!authentic) throw new ApiError(403, 'Account certificate is not signed by Minecraft');
+      if (!authentic) {
+        throw new ApiError(403, 'Account certificate is not signed by Minecraft');
+      }
       const account = await crypto.subtle.importKey(
         'spki',
         publicKey,
@@ -64,8 +73,9 @@ export class OfficialCertificateVerifier {
       if (
         account.algorithm.modulusLength !== 2048 ||
         Array.from(account.algorithm.publicExponent).join(',') !== '1,0,1'
-      )
+      ) {
         throw new ApiError(403, 'Unsupported account signing key');
+      }
       const payload = new TextEncoder().encode(
         [
           'catbud-owner-edit-proof-v1',
@@ -76,11 +86,14 @@ export class OfficialCertificateVerifier {
           challenge.server_hash,
         ].join('\n'),
       );
-      if (!(await crypto.subtle.verify(RSA, account, signature, payload)))
+      if (!(await crypto.subtle.verify(RSA, account, signature, payload))) {
         throw new ApiError(403, 'Account does not own this challenge');
+      }
       return expiry;
     } catch (error) {
-      if (error instanceof ApiError) throw error;
+      if (error instanceof ApiError) {
+        throw error;
+      }
       throw new ApiError(401, 'Invalid account certificate or signature');
     }
   }

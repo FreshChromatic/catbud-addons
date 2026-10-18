@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>模組更新與公告 · Catbud</title>
+    <link rel="stylesheet" href="/style.css" />
+    <script type="module" src="/addons.mjs"></script>
+  </head>
+  <body class="addon-management">
+    <header>
+      <div>
+        <small>Catbud Addons</small>
+        <h1>模組更新與公告</h1>
+      </div>
+      <span id="identity">正在確認登入…</span>
+    </header>
+    <nav aria-label="管理分類">
+      <a href="/">公共傳點管理</a><button id="releases-tab" aria-current="page">版本發布</button
+      ><button id="notices-tab">公告</button><button id="audit-tab">操作紀錄</button
+      ><button id="refresh">重新整理</button>
+    </nav>
+    <p id="message" role="status" aria-live="polite"></p>
+    <main>
+      <section class="list-pane">
+        <h2 id="list-title">版本發布</h2>
+        <div id="items"></div>
+        <button id="create-notice" hidden>新增公告</button>
+      </section>
+      <section id="detail" aria-label="詳情與編輯"></section>
+    </main>
+    <dialog id="confirm">
+      <form method="dialog">
+        <h2 id="confirm-title">確認發布</h2>
+        <p id="confirm-description"></p>
+        <div class="actions">
+          <button value="cancel">取消</button><button value="continue">確認</button>
+        </div>
+      </form>
+    </dialog>
+  </body>
+</html>

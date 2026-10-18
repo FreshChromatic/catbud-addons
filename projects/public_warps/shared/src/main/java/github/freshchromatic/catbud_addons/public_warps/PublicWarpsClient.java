@@ -196,8 +196,9 @@ public final class PublicWarpsClient implements ClientModInitializer {
         var status = new SettingsAddon.StatusRow(Component.translatable("warps.title"), () -> Component.translatable(
             "screen.catbud_core.open"), this::open, () -> Minecraft.getInstance().player != null, () -> Component
                 .literal("X / /too"));
-        var addon = new SettingsAddon("public_warps", Component.translatable("warps.title"), "1.0.3", List.of(
-            "general"), List.of(), settingsStore, List::of, category -> List.of(status));
+        var addon = new SettingsAddon("public_warps", Component.translatable("warps.title"), installedVersion(
+            "catbud_public_warps"), List.of("general"), List.of(), settingsStore, List::of, category -> List.of(
+                status));
         CatbudCore.register(addon);
     }
 

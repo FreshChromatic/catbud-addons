@@ -30,8 +30,12 @@ const kinds = {
 const $ = (id) => document.getElementById(id);
 const element = (tag, text, className) => {
   const node = document.createElement(tag);
-  if (text != null) node.textContent = text;
-  if (className) node.className = className;
+  if (text != null) {
+node.textContent = text;
+}
+  if (className) {
+node.className = className;
+}
   return node;
 };
 const date = (value) => (value ? new Date(value).toLocaleString('zh-TW') : '尚無紀錄');
@@ -52,7 +56,9 @@ function clearDetail() {
 function fields(values) {
   const list = element('dl');
   for (const [label, value] of Object.entries(values))
-    list.append(element('dt', label), element('dd', value ?? '—'));
+    {
+list.append(element('dt', label), element('dd', value ?? '—'));
+}
   return list;
 }
 
@@ -78,7 +84,9 @@ async function confirmAction(title, description) {
 }
 
 async function write(path, value) {
-  if (state.busy) throw new Error('操作處理中，請稍候。');
+  if (state.busy) {
+throw new Error('操作處理中，請稍候。');
+}
   state.busy = true;
   message('正在處理…');
   try {
@@ -102,7 +110,9 @@ async function load(offset = 0) {
   try {
     if (state.page === 'status') {
       const status = await client.request('status');
-      if (serial !== state.serial) return;
+      if (serial !== state.serial) {
+return;
+}
       $('detail').replaceChildren(
         element('h2', '服務狀態'),
         fields({
@@ -132,7 +142,9 @@ async function load(offset = 0) {
     const result = await client.request(
       route(state.page) + '?offset=' + offset + '&q=' + encodeURIComponent($('search').value),
     );
-    if (serial !== state.serial) return;
+    if (serial !== state.serial) {
+return;
+}
     for (const item of result.items) {
       const node = element('button', null, 'item');
       node.append(
@@ -141,7 +153,9 @@ async function load(offset = 0) {
         element('small', date(item.created_at ?? item.checked_at)),
       );
       if (item.display_name && item.display_name !== item.name)
-        node.append(element('small', item.display_name));
+        {
+node.append(element('small', item.display_name));
+}
       node.onclick = () => {
         $('items')
           .querySelectorAll('.selected')
@@ -152,7 +166,9 @@ async function load(offset = 0) {
       $('items').append(node);
     }
     if (!result.items.length)
-      $('items').append(element('p', `目前沒有${labels[state.page]}資料。`, 'empty'));
+      {
+$('items').append(element('p', `目前沒有${labels[state.page]}資料。`, 'empty'));
+}
     state.offset = offset;
     state.nextOffset = result.nextOffset;
     $('more').hidden = state.nextOffset == null;
@@ -160,7 +176,9 @@ async function load(offset = 0) {
     $('list-count').textContent = `共 ${result.total} 筆 · 第 ${Math.floor(offset / 25) + 1} 頁`;
     message();
   } catch (error) {
-    if (serial === state.serial) message(error.message, true);
+    if (serial === state.serial) {
+message(error.message, true);
+}
   }
 }
 
@@ -205,7 +223,9 @@ async function show(item) {
   const serial = state.serial;
   const server = state.server;
   const detail = $('detail');
-  if (state.page === 'contributors') return contributorEditor(item);
+  if (state.page === 'contributors') {
+return contributorEditor(item);
+}
   if (state.page === 'audit') {
     detail.replaceChildren(
       element('h2', '操作紀錄'),
@@ -224,7 +244,9 @@ async function show(item) {
   const result = await client.request(
     route(reviewing ? 'submissions/' + item.id : 'warps/' + item.uuid),
   );
-  if (serial !== state.serial) return;
+  if (serial !== state.serial) {
+return;
+}
   const warp = reviewing ? result.current : result;
   const submission = reviewing ? result.submission : null;
   detail.replaceChildren(
@@ -252,12 +274,18 @@ async function show(item) {
     }),
   );
   detail.scrollTop = 0;
-  if (matchMedia('(max-width: 960px)').matches) detail.scrollIntoView({ block: 'start' });
+  if (matchMedia('(max-width: 960px)').matches) {
+detail.scrollIntoView({ block: 'start' });
+}
   if (result.changed)
-    detail.append(
+    {
+detail.append(
       element('p', '正式內容已有更新。請比較目前內容，再決定是否批准這筆提案。', 'warning'),
     );
-  if (result.expired) detail.append(element('p', '這筆提案已到期，無法批准。', 'warning'));
+}
+  if (result.expired) {
+detail.append(element('p', '這筆提案已到期，無法批准。', 'warning'));
+}
   if (submission?.kind === 'metadata') {
     const proposed = JSON.parse(submission.payload);
     detail.append(
@@ -289,15 +317,20 @@ async function show(item) {
       JSON.parse(submission?.payload ?? '{}').validArrival === true);
   const ready = () => {
     remaining--;
-    if (approve) approve.disabled = !eligibility || failed || remaining > 0;
+    if (approve) {
+approve.disabled = !eligibility || failed || remaining > 0;
+}
   };
   for (const [title, hash] of hashes) {
     const container = element('div', null, 'preview');
     container.append(element('h3', title));
     previews.append(container);
-    if (!hash) container.append(element('p', '尚無預覽', 'empty'));
+    if (!hash) {
+container.append(element('p', '尚無預覽', 'empty'));
+}
     else
-      state.views.push(
+      {
+state.views.push(
         new PreviewView(
           container,
           client,
@@ -305,13 +338,17 @@ async function show(item) {
           hash,
           () => {
             failed = true;
-            if (approve) approve.disabled = true;
+            if (approve) {
+approve.disabled = true;
+}
           },
           ready,
         ),
       );
+}
     if (hash)
-      container.append(
+      {
+container.append(
         button('下載這份快照', async () => {
           const bytes = await client.preview(server, hash);
           const link = element('a');
@@ -322,6 +359,7 @@ async function show(item) {
           setTimeout(() => URL.revokeObjectURL(url), 10000);
         }),
       );
+}
   }
   const actions = element('div', null, 'actions');
   detail.append(actions);
@@ -348,7 +386,9 @@ async function show(item) {
       approve,
       reason,
       button('拒絕', async () => {
-        if (!reason.value.trim()) throw new Error('請填寫拒絕原因。');
+        if (!reason.value.trim()) {
+throw new Error('請填寫拒絕原因。');
+}
         await write(target + '/reject', {
           reason: reason.value.trim(),
           expectedRevision: warp.revision,
@@ -365,11 +405,14 @@ async function show(item) {
       ['disable', '標記無法使用', '保留傳點，顯示暫時無法使用；玩家仍可嘗試傳送。'],
       ['restore', '恢復可用狀態', '這只修改可用狀態，不代表新增成功到達次數。'],
     ])
-      actions.append(
+      {
+actions.append(
         button(
           title,
           async () => {
-            if (!(await confirmAction(title, `${warp.name}（${server}）：${description}`))) return;
+            if (!(await confirmAction(title, `${warp.name}（${server}）：${description}`))) {
+return;
+}
             await write(target + '/' + command, { expectedRevision: warp.revision });
             await load();
             message('操作已完成。');
@@ -377,6 +420,7 @@ async function show(item) {
           command === 'unpublish' ? 'danger' : '',
         ),
       );
+}
   }
 }
 
@@ -424,7 +468,9 @@ function contributorEditor(item = null) {
         `${id.value}：角色 ${role.value}，${enabled.checked ? '啟用' : '停用'}；更換密鑰會讓舊密鑰立即失效。`,
       ))
     )
-      return;
+      {
+return;
+}
     const result = await write(
       `contributors/${encodeURIComponent(id.value)}/${rotate ? 'grant' : 'update'}`,
       {
@@ -446,7 +492,9 @@ function contributorEditor(item = null) {
     message('投稿權限已更新。');
   };
   const actions = element('div', null, 'actions');
-  if (item) actions.append(button('儲存權限', submit(false)));
+  if (item) {
+actions.append(button('儲存權限', submit(false)));
+}
   actions.append(button(item ? '更換密鑰' : '建立投稿者', submit(true), 'primary'));
   detail.append(actions);
 }

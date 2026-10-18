@@ -27,6 +27,9 @@ public final class SettingsScreen extends Screen {
     private String    addonId = "core", category = "general", query = "";
     private Component notice  = Component.empty();
 
+    private Object                    updateView;
+    private final Map<String, Button> categoryButtons = new LinkedHashMap<>();
+
     private Rows   rows;
     private Button reset;
 
@@ -56,11 +59,21 @@ public final class SettingsScreen extends Screen {
     }
 
     private Component categoryLabel(String id) {
-        return Component.translatable("category.catbud_core." + id);
+        var label = Component.translatable("category.catbud_core." + id);
+        if (addon() == null && (id.equals("updates") || id.equals("notifications"))) {
+            var updates = CatbudCore.updates().coordinator();
+            int count = id.equals("updates") ? updates.updateCount() : updates.unreadCount();
+            if (count > 0) {
+                label.append(Component.literal(" " + (count > 9 ? "9+" : count)).withStyle(
+                    net.minecraft.ChatFormatting.RED));
+            }
+        }
+        return label;
     }
 
     @Override
     protected void init() {
+        categoryButtons.clear();
         panelWidth = Math.min(width - 20, 680);
         panelHeight = Math.min(height - 24, 420);
         panelX = (width - panelWidth) / 2;
@@ -85,7 +98,8 @@ public final class SettingsScreen extends Screen {
                 }, () -> addonId.equals(id), false, null));
         }
         int categoryY = panelY + 14 + ((tabs.size() + tabsPerRow - 1) / tabsPerRow) * 22;
-        List<String> categories = addon() == null ? List.of("general", "hud", "about") : addon().categories();
+        List<String> categories = addon() == null ? List.of("general", "hud", "updates", "notifications", "about")
+            : addon().categories();
         int categoriesPerRow = Math.max(1, usable / 48), tabX = left;
         for (int i = 0; i < categories.size(); i++) {
             String id = categories.get(i);
@@ -97,17 +111,20 @@ public final class SettingsScreen extends Screen {
                 case "status" -> "clock_00";
                 default -> null;
             } : null;
-            int tabWidth = font.width(categoryLabel(id)) + (icon == null ? 24 : 42);
+            int tabWidth = font.width(categoryLabel(id)) + (icon == null ? 24 : 42) + (id.equals("updates") || id
+                .equals("notifications") ? 20 : 0);
             if (i > 0 && tabX + tabWidth > left + usable) {
                 categoryY += 23;
                 tabX = left;
             }
-            addRenderableWidget(new PanelButton(tabX, categoryY, tabWidth, 23, categoryLabel(id), b -> {
-                category = id;
-                query = "";
-                rebuildWidgets();
-            }, () -> category.equals(id) && query.isEmpty(), false, icon == null ? null
-                : net.minecraft.resources.Identifier.withDefaultNamespace("textures/item/" + icon + ".png")));
+            Button categoryButton = addRenderableWidget(new PanelButton(tabX, categoryY, tabWidth, 23, categoryLabel(
+                id), b -> {
+                    category = id;
+                    query = "";
+                    rebuildWidgets();
+                }, () -> category.equals(id) && query.isEmpty(), false, icon == null ? null
+                    : net.minecraft.resources.Identifier.withDefaultNamespace("textures/item/" + icon + ".png")));
+            categoryButtons.put(id, categoryButton);
             tabX += tabWidth + 1;
         }
         int buttonY = panelY + panelHeight - 28;
@@ -222,6 +239,18 @@ public final class SettingsScreen extends Screen {
         }
     }
 
+    @Override
+    public void tick() {
+        super.tick();
+        categoryButtons.forEach((id, button) -> button.setMessage(categoryLabel(id)));
+        var snapshot = CatbudCore.updates().coordinator().snapshot();
+        if (addon() == null && (category.equals("updates") || category.equals("notifications"))
+            && updateView != snapshot) {
+            updateView = snapshot;
+            populate();
+        }
+    }
+
     private void populate() {
         if (rows == null) {
             return;
@@ -230,6 +259,18 @@ public final class SettingsScreen extends Screen {
         rows.clear();
         if (addon() == null) {
             if (category.equals("general")) {
+                rows.add(new Row(new SettingsAddon.StatusRow(Component.translatable("category.catbud_core.updates"),
+                    () -> Component.translatable("updates.core.summary", CatbudCore.updates().coordinator()
+                        .updateCount()), () -> {
+                            category = "updates";
+                            rebuildWidgets();
+                        }, () -> true, Component::empty)));
+                rows.add(new Row(new SettingsAddon.StatusRow(Component.translatable(
+                    "category.catbud_core.notifications"), () -> Component.translatable("notices.core.summary",
+                        CatbudCore.updates().coordinator().unreadCount()), () -> {
+                            category = "notifications";
+                            rebuildWidgets();
+                        }, () -> true, Component::empty)));
                 rows.add(new Row(SettingsAddon.StatusRow.info(Component.translatable("key.catbud_core.open_settings"),
                     CatbudCore::openKeyName)));
                 rows.add(new Row(new SettingsAddon.StatusRow(Component.translatable("screen.catbud_core.controls"),
@@ -237,11 +278,15 @@ public final class SettingsScreen extends Screen {
                         new ControlsScreen(this, minecraft.options)), () -> true, () -> Component.empty())));
                 rows.add(new Row(SettingsAddon.StatusRow.info(Component.translatable("screen.catbud_core.language"),
                     () -> Component.translatable("screen.catbud_core.follow_language"))));
+            } else if (category.equals("updates")) {
+                AddonUpdateRows.updates(this).forEach(this::addStatusRow);
+            } else if (category.equals("notifications")) {
+                AddonUpdateRows.notices(this).forEach(this::addStatusRow);
             } else if (category.equals("hud")) {
                 addHudRows();
             } else {
                 rows.add(new Row(SettingsAddon.StatusRow.info(Component.translatable("addon.catbud_core.core"),
-                    () -> Component.literal("1.0.3"))));
+                    () -> Component.literal(AddonUpdateClient.version("catbud_core")))));
                 for (var a : CatbudCore.addons()) {
                     rows.add(new Row(SettingsAddon.StatusRow.info(a.name(), () -> Component.literal(a.version()))));
                 }

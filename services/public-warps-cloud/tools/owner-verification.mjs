@@ -31,8 +31,9 @@ await database
   .run();
 
 const qualification = async (url) => {
-  if (String(url) !== ServerScope.playerUrl(serverId, player.uuid))
+  if (String(url) !== ServerScope.playerUrl(serverId, player.uuid)) {
     return new Response(null, { status: 404 });
+  }
   return Response.json({ ...player, pass: true });
 };
 
@@ -109,7 +110,9 @@ const server = createServer(async (incoming, outgoing) => {
       console.log('Official account saved metadata in the isolated local database.');
     }
   } catch {
-    if (!outgoing.headersSent) outgoing.writeHead(500);
+    if (!outgoing.headersSent) {
+      outgoing.writeHead(500);
+    }
     outgoing.end();
     console.error('Isolated verification request failed. No credentials were logged.');
   }

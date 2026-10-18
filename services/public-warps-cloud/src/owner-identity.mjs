@@ -15,22 +15,26 @@ export class OwnerIdentity {
       .prepare('SELECT * FROM server_warps WHERE server_id=? AND uuid=? AND published=1')
       .bind(serverId, uuid)
       .first();
-    if (!warp) throw new ApiError(404, 'Your published warp was not found on this server');
+    if (!warp) {
+      throw new ApiError(404, 'Your published warp was not found on this server');
+    }
     return warp;
   }
 
   async challenge(serverId, value, request) {
     const player = identity(value);
-    if (!/^[0-9a-f]{64}$/.test(value.clientNonce ?? ''))
+    if (!/^[0-9a-f]{64}$/.test(value.clientNonce ?? '')) {
       throw new ApiError(400, 'A fresh client nonce is required');
+    }
     await this.budgets.consume('owner-challenges', 400);
     const address = request.headers.get('CF-Connecting-IP') ?? 'local';
     const source = await sha256(address.slice(0, 45));
     await this.budgets.consume('owner-challenge-source:' + source, 12, 1, 60000);
     await new StorageCapacity(this.database, this.env).requireGrowth();
     const warp = await this.warp(serverId, player.uuid);
-    if (warp.name.toLowerCase() !== player.name.toLowerCase())
+    if (warp.name.toLowerCase() !== player.name.toLowerCase()) {
       throw new ApiError(403, 'Player identity does not match this warp');
+    }
     const now = this.budgets.now;
     const id = crypto.randomUUID();
     const proofKey = randomBytes(32).toString('hex');
@@ -63,7 +67,9 @@ export class OwnerIdentity {
         now,
       )
       .first();
-    if (!inserted) throw new ApiError(429, 'Account verification capacity reached', 60);
+    if (!inserted) {
+      throw new ApiError(429, 'Account verification capacity reached', 60);
+    }
     return {
       serverId,
       uuid: player.uuid,
@@ -76,8 +82,9 @@ export class OwnerIdentity {
   }
 
   async verify(serverId, value, origin) {
-    if (!UUID.test(value.challengeId ?? '') || !/^[0-9a-f]{64}$/.test(value.proofKey ?? ''))
+    if (!UUID.test(value.challengeId ?? '') || !/^[0-9a-f]{64}$/.test(value.proofKey ?? '')) {
       throw new ApiError(400, 'Invalid ownership challenge');
+    }
     await this.budgets.consume('owner-verifications', 400);
     const challenge = await this.database
       .prepare(
@@ -86,7 +93,9 @@ export class OwnerIdentity {
       )
       .bind(value.challengeId, serverId, await sha256(value.proofKey), this.budgets.now)
       .first();
-    if (!challenge) throw new ApiError(401, 'Ownership challenge expired or already used');
+    if (!challenge) {
+      throw new ApiError(401, 'Ownership challenge expired or already used');
+    }
     const certificateExpiry = await this.verifier.verify(challenge, value, origin);
     await this.warp(serverId, challenge.uuid);
     await new StorageCapacity(this.database, this.env).requireGrowth();
@@ -99,19 +108,24 @@ export class OwnerIdentity {
       )
       .bind(await sha256(token), serverId, challenge.uuid, expiresAt, this.budgets.now)
       .first();
-    if (!inserted) throw new ApiError(429, 'Owner session capacity reached', 60);
+    if (!inserted) {
+      throw new ApiError(429, 'Owner session capacity reached', 60);
+    }
     return { serverId, uuid: challenge.uuid, ownerToken: token, expiresAt };
   }
 
   async require(serverId, request) {
     const token = request.headers.get('Authorization')?.replace(/^Bearer /, '') ?? '';
-    if (!/^[0-9a-f]{64}$/.test(token))
+    if (!/^[0-9a-f]{64}$/.test(token)) {
       throw new ApiError(401, 'Official account verification is required');
+    }
     const session = await this.database
       .prepare('SELECT * FROM owner_sessions WHERE token_hash=? AND server_id=? AND expires_at>?')
       .bind(await sha256(token), serverId, this.budgets.now)
       .first();
-    if (!session) throw new ApiError(401, 'Owner editing session expired');
+    if (!session) {
+      throw new ApiError(401, 'Owner editing session expired');
+    }
     return session;
   }
 }

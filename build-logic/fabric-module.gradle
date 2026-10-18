@@ -38,6 +38,8 @@ dependencies {
     testImplementation 'org.junit.jupiter:junit-jupiter:5.11.4'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
     if (module == 'catbud_core') {
+        implementation project(':update-engine')
+        include project(':update-engine')
         if (legacy) {
             modImplementation "com.terraformersmc:modmenu:${target.modmenu_version}"
         } else {
@@ -78,6 +80,17 @@ finalArchives.each { archiveTask ->
     }
 }
 processResources {
+    if (module == 'catbud_core') {
+        dependsOn project(':update-engine').tasks.named('installerJar')
+        from(rootProject.file('release/keys.json')) {
+            into 'assets/catbud_core'
+            rename { 'release-keys.json' }
+        }
+        from(project(':update-engine').tasks.named('installerJar').flatMap { it.archiveFile }) {
+            into 'catbud'
+            rename { 'update-installer.jar' }
+        }
+    }
     def values = [version: project.version, core_version: project.core_version,
                   minecraft_version: minecraft_version, java_version: javaTarget,
                   loader_version: project.loader_version, modmenu_version: target.modmenu_version,
@@ -99,4 +112,7 @@ if (module == 'public_warps' && project.hasProperty('verifyWarps')) {
 }
 if (module == 'monster_wave' && project.hasProperty('verifyMonsterWave')) {
     apply from: rootProject.file('build-logic/monster-wave-verification.gradle')
+}
+if (module == 'catbud_core' && project.hasProperty('verifyUpdates')) {
+    apply from: rootProject.file('build-logic/updates-verification.gradle')
 }

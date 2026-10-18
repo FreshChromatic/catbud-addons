@@ -1,3 +1,43 @@
+.addon-management table {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+}
+.addon-management .notice-preview p {
+  white-space: pre-wrap;
+}
+.addon-management td,
+.addon-management th {
+  padding: 8px 4px;
+  text-align: left;
+  vertical-align: top;
+  overflow-wrap: anywhere;
+  border-bottom: 1px solid #e2e7e4;
+}
+.addon-management fieldset {
+  margin: 14px 0;
+  border: 1px solid #c4ccc9;
+  border-radius: 5px;
+}
+.addon-management .field:has(input[type='checkbox']) {
+  display: inline-flex;
+  flex-direction: row-reverse;
+  align-items: center;
+  gap: 6px;
+  margin-right: 12px;
+}
+.addon-management input[type='checkbox'] {
+  width: auto;
+}
+.addon-management nav {
+  flex-wrap: wrap;
+}
+@media (max-width: 960px) {
+  body.addon-management .list-pane {
+    height: auto;
+    max-height: 40dvh;
+  }
+}
 :root {
   color-scheme: light;
   font:

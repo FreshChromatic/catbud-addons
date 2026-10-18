@@ -1,0 +1,6 @@
+{
+  "core": "新增更新與通知中心，支援背景版本檢查、公告已讀紀錄及關閉遊戲後安裝更新。",
+  "magic_tower": "內嵌新版 Catbud Core，可統一檢查及安裝模組更新。",
+  "public_warps": "內嵌新版 Catbud Core，可查看適用的服務公告。",
+  "monster_wave": "內嵌新版 Catbud Core，納入統一更新檢查。"
+}

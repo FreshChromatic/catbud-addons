@@ -12,6 +12,7 @@ allprojects {
 tasks.register('build') {
     group = 'build'
     description = 'Build all modules for every supported Minecraft version.'
+    dependsOn ':update-engine:test'
     dependsOn(['catbud_core', 'magic_tower', 'public_warps', 'monster_wave'].collectMany { module ->
         ['1.21.11', '26.1.2', '26.2', '26.3'].collect { mc -> ":projects:${module}:${mc}:build" }
     })
