@@ -45,15 +45,15 @@ catbud-addons/
 `assemble` 會打包全部十六種「模組 × 版本」組合，但不會執行測試或啟動客戶端。單一模組版本可用 `./gradlew.bat :projects:monster_wave:26.2:assemble` 打包。
 
 `releaseJars` 會將四個版本的 Core、Magic Tower、公共傳點與怪物浪潮可安裝 JAR 輸出至 `out/`。
-Magic Tower、公共傳點與怪物浪潮 JAR 已內嵌對應版本的 Core。全部模組版本為 **1.0.3**。
+Magic Tower、公共傳點與怪物浪潮 JAR 已內嵌對應版本的 Core。全部模組版本為 **1.0.2**。
 
 26.1.2 的產物為：
 
 ```text
-out/catbud-core-26.1.2-1.0.3.jar
-out/catbud-magic_tower-26.1.2-1.0.3.jar
-out/catbud-public_warps-26.1.2-1.0.3.jar
-out/catbud-monster_wave-26.1.2-1.0.3.jar
+out/catbud-core-26.1.2-1.0.2.jar
+out/catbud-magic_tower-26.1.2-1.0.2.jar
+out/catbud-public_warps-26.1.2-1.0.2.jar
+out/catbud-monster_wave-26.1.2-1.0.2.jar
 ```
 
 開發用與原始碼產物位於 `projects/<module>/versions/<minecraft>/build/libs/`。各個獨立產物位於：

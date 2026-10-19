@@ -1,6 +1,6 @@
 # Catbud 公共傳點
 
-支援 1.21.11、26.1.2、26.2、26.3。安裝對應 `out/catbud-public_warps-<版本>-1.0.3.jar` 與 Fabric API；JAR 已內嵌 Core，不需要 malilib、litematica 或 SchematicPreview。
+支援 1.21.11、26.1.2、26.2、26.3。安裝對應 `out/catbud-public_warps-<版本>-1.0.2.jar` 與 Fabric API；JAR 已內嵌 Core，不需要 malilib、litematica 或 SchematicPreview。
 
 `X` 或客戶端 `/too` 開啟。單擊縮圖選取、雙擊傳送，底部亦有傳送按鈕。快捷鍵可於 Minecraft 控制設定修改。服務名單與伺服器補全合併顯示；雲端協議支援貓芽（catbud.net）與貓域（catrealm.net）；其他伺服器不發送指令或投稿。
 

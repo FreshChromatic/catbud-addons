@@ -20,7 +20,7 @@
 
 ## 安裝與開啟紀錄
 
-1. 從儲存庫 `out` 資料夾選擇與遊戲版本相同的 `catbud-public_warps-<版本>-1.0.3.jar`，放入該遊戲實例的 `mods`。支援 1.21.11、26.1.2、26.2、26.3，需要 Fabric Loader 與相符 Fabric API。Core 已內嵌，不需 malilib、litematica 或 SchematicPreview。
+1. 從儲存庫 `out` 資料夾選擇與遊戲版本相同的 `catbud-public_warps-<版本>-1.0.2.jar`，放入該遊戲實例的 `mods`。支援 1.21.11、26.1.2、26.2、26.3，需要 Fabric Loader 與相符 Fabric API。Core 已內嵌，不需 malilib、litematica 或 SchematicPreview。
 2. 先啟動一次遊戲，關閉後編輯**該遊戲實例**的 `config/catbud/public-warps-service.json`。保留服務位址，新增或修改 `traceTeleport`：
 
    ```json
