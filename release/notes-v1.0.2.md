@@ -1,7 +1,7 @@
 # 游戲版本支援 1.21.11, 26.1.2, 26.2, 26.3
 
 ## 魔塔輔助模組 新增/調整
-- 狀態二次確認，每一次重連都恢復為自動偵測
+- 狀態二次確認，同一玩家重新登入同一伺服器的塔內維度時，恢復原有狀態
 <div align="center">
 <img width="1543" height="335" alt="image" src="https://github.com/user-attachments/assets/d4c996ea-54dd-4411-adbb-01f851a81ee4" />
 <br>
