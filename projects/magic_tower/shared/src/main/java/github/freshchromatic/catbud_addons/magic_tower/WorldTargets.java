@@ -205,11 +205,15 @@ public final class WorldTargets {
             .getValue(), entry.getKey())).toList();
     }
 
-    public void clear() {
+    void releaseLoadedChunks() {
         scanned.clear();
         lastScannedTick.clear();
         pending.clear();
         pendingSet.clear();
+    }
+
+    public void clear() {
+        releaseLoadedChunks();
         portals.clear();
         observedPortals.clear();
         chests.clear();

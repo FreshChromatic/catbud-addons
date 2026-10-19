@@ -1,4 +1,5 @@
 {
+  "magic_tower.title": "魔幻之塔",
   "key.category.catbud_addons.general": "Catbud 附加模組",
   "key.catbud_addons.toggle_target_line": "切換目標路線",
   "hint.catbud_addons.cycle_target": "Shift + %s 切換目標　·　%s 開關路線",
@@ -35,7 +36,7 @@
   "message.catbud_addons.auto_portal_resumed": "本樓層已恢復 %s 的自動路線。",
   "message.catbud_addons.manual_explore_status": "可探索路線：%s。",
   "message.catbud_addons.terrain_status": "地形地圖：已載入區塊 %s，已檢查分區 %s，待檢查分區 %s，可站立位置 %s。",
-  "setting.magic_tower.enabled": "啟用 Magic Tower",
+  "setting.magic_tower.enabled": "啟用魔幻之塔",
   "setting.magic_tower.enabled.description": "關閉後停止掃描、標記與路線計算。",
   "setting.magic_tower.radar.enabled": "啟用雷達",
   "setting.magic_tower.radar.enabled.description": "控制雷達顯示；路線由路線設置獨立管理。",
@@ -183,7 +184,7 @@
   "status.magic_tower.allowed": "允許",
   "status.magic_tower.paused": "暫停",
   "status.magic_tower.permanent_off": "已由路線設置關閉",
-  "status.magic_tower.disabled": "請先在一般頁啟用 Magic Tower。",
+  "status.magic_tower.disabled": "請先在一般頁啟用魔幻之塔。",
   "status.magic_tower.need_world": "請先進入世界。",
   "status.magic_tower.need_scan": "請先啟用掃描。",
   "status.magic_tower.immediate": "立即生效、不永久保存；取消不會撤銷此操作。",

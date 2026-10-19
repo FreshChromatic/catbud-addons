@@ -144,10 +144,11 @@ final class MagicTowerSettings {
         }
         String version = FabricLoader.getInstance().getModContainer("catbud_addons").orElseThrow().getMetadata()
             .getVersion().getFriendlyString();
-        CatbudCore.register(new SettingsAddon("magic_tower", Component.literal("Magic Tower"), version, List.of(
-            "general", "hud", "radar", "esp", "routes", "hints", "status"), schema, store, MagicTowerSettings::status,
-            category -> category.equals("general") ? List.of(SettingsAddon.StatusRow.info(Component.translatable(
-                "key.catbud_addons.toggle_target_line"), CatbudAddonsClient::targetKeyName)) : List.of()));
+        CatbudCore.register(new SettingsAddon("magic_tower", Component.translatable("magic_tower.title"), version, List
+            .of("general", "hud", "radar", "esp", "routes", "hints", "status"), schema, store,
+            MagicTowerSettings::status, category -> category.equals("general") ? List.of(SettingsAddon.StatusRow.info(
+                Component.translatable("key.catbud_addons.toggle_target_line"), CatbudAddonsClient::targetKeyName))
+                : List.of()));
     }
 
     private static Component tr(String key, Object... args) {

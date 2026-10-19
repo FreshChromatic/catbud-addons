@@ -1,4 +1,5 @@
 {
+  "magic_tower.title": "Magic Tower",
   "key.category.catbud_addons.general": "Catbud Addons",
   "key.catbud_addons.toggle_target_line": "Toggle target route",
   "hint.catbud_addons.cycle_target": "Shift + %s cycle target  ·  %s toggle route",

@@ -32,12 +32,17 @@ public final class TowerSession {
         AUTO, FORCED, OFF
     }
 
+    private record ConnectionIdentity(String server, UUID player) {}
+
     public enum EvacuationStatus {
         UNKNOWN, PRESENT, ABSENT
     }
 
     private Phase      phase      = Phase.IDLE;
     private ManualMode manualMode = ManualMode.AUTO;
+
+    private ConnectionIdentity connectionIdentity;
+    private boolean            suspended;
 
     private UUID    bossId;
     private long    vanishedAt = -1;
@@ -57,8 +62,8 @@ public final class TowerSession {
     private final WorldTargets targets = new WorldTargets();
 
     public boolean isActive() {
-        return MagicTowerSettings.enabled() && (manualMode == ManualMode.FORCED || (manualMode == ManualMode.AUTO
-            && phase == Phase.ACTIVE));
+        return !suspended && MagicTowerSettings.enabled() && (manualMode == ManualMode.FORCED
+            || (manualMode == ManualMode.AUTO && phase == Phase.ACTIVE));
     }
 
     public String modeKey() {
@@ -113,6 +118,46 @@ public final class TowerSession {
     public void resetConnection() {
         resetSession();
         manualMode = ManualMode.AUTO;
+        connectionIdentity = null;
+        clearWorldReferences();
+    }
+
+    public void disconnect() {
+        if (suspended) {
+            return;
+        }
+        if (isActive() && CUSTOM_DIMENSION.equals(lastDimension) && connectionIdentity != null) {
+            suspended = true;
+            bossId = null;
+            vanishedAt = -1;
+            teleportPacketSeen = false;
+            targets.releaseLoadedChunks();
+            clearWorldReferences();
+        } else {
+            resetConnection();
+        }
+    }
+
+    public void joinConnection() {
+        if (!suspended) {
+            resetConnection();
+        }
+    }
+
+    void updateConnection(String server, UUID player, Identifier dimension) {
+        ConnectionIdentity current = server == null ? null : new ConnectionIdentity(server, player);
+        if (suspended) {
+            if (connectionIdentity.equals(current) && CUSTOM_DIMENSION.equals(dimension)) {
+                suspended = false;
+                CatbudAddonsClient.LOGGER.debug("重新登入 minecraft:custom，恢復魔幻之塔狀態");
+            } else {
+                resetConnection();
+            }
+        }
+        connectionIdentity = current;
+    }
+
+    private void clearWorldReferences() {
         lastLevel = null;
         lastDimension = null;
         lastPosition = null;
@@ -141,7 +186,7 @@ public final class TowerSession {
     }
 
     public void onBossbarName(UUID id, Component name) {
-        if (!MagicTowerSettings.enabled()) {
+        if (suspended || !MagicTowerSettings.enabled()) {
             return;
         }
         if (manualMode != ManualMode.AUTO) {
@@ -183,7 +228,7 @@ public final class TowerSession {
     }
 
     public void onMessage(Component text, String channel) {
-        if (!MagicTowerSettings.enabled()) {
+        if (suspended || !MagicTowerSettings.enabled()) {
             return;
         }
         long now = System.currentTimeMillis();
@@ -219,15 +264,14 @@ public final class TowerSession {
             // Respawn/dimension travel can temporarily remove the local level before the next
             // packet.
             if (mc.getConnection() == null) {
-                if (isActive() || phase != Phase.IDLE) {
-                    CatbudAddonsClient.LOGGER.debug("任務取消：離開伺服器或世界");
-                }
-                resetConnection();
+                disconnect();
             }
             return;
         }
 
         Identifier dimension = ClientPlatform.dimension(mc);
+        var server = mc.getCurrentServer();
+        updateConnection(server == null ? null : server.ip, mc.player.getUUID(), dimension);
         Vec3 position = mc.player.position();
         boolean changedWorld = lastLevel != null && lastLevel != mc.level;
         boolean changedDimension = lastDimension != null && !dimension.equals(lastDimension);
@@ -332,6 +376,7 @@ public final class TowerSession {
     }
 
     private void resetSession() {
+        suspended = false;
         phase = Phase.IDLE;
         bossId = null;
         vanishedAt = -1;

@@ -63,8 +63,8 @@ public final class CatbudAddonsClient implements ClientModInitializer {
         github.freshchromatic.catbud_addons.catbud_core.CatbudCore.huds().register(new CoinHudElement(HUD));
         github.freshchromatic.catbud_addons.catbud_core.CatbudCore.huds().register(new EvacuationHudElement(HUD));
         github.freshchromatic.catbud_addons.catbud_core.CatbudCore.huds().register(new FloorHudElement(HUD));
-        ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> SESSION.resetConnection());
-        ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> SESSION.resetConnection());
+        ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> SESSION.joinConnection());
+        ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> SESSION.disconnect());
         targetLineKey = ClientPlatform.registerKey("key.catbud_addons.toggle_target_line", InputConstants.KEY_GRAVE,
             Identifier.fromNamespaceAndPath("catbud_addons", "general"));
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
