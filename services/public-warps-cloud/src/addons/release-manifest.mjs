@@ -110,11 +110,15 @@ export function validateManifest(value) {
     const provided = new Map(artifact.provides.map((mod) => [mod.modId, mod.version]));
     if (
       provided.size !== artifact.provides.length ||
-      provided.size !== (artifact.module === 'core' ? 1 : 2) ||
+      provided.size < 1 ||
+      provided.size > (artifact.module === 'core' ? 1 : 2) ||
       provided.get(artifact.modId) !== value.version ||
-      provided.get('catbud_core') !== value.version
+      [...provided].some(
+        ([id, version]) =>
+          ![artifact.modId, 'catbud_core'].includes(id) || version !== value.version,
+      )
     ) {
-      throw new Error('Invalid embedded Core metadata');
+      throw new Error('Invalid provided mod metadata');
     }
   }
   if (

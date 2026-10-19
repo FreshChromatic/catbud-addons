@@ -55,7 +55,8 @@ public final class UpdatePlanner {
             replacements.add(new UpdatePlan.Replacement(jar.path(), jar.sha256(), artifact));
         }
         if (!futureMods.contains(AddonModule.CORE.modId())) {
-            throw new IllegalArgumentException("Missing required Catbud Core");
+            throw new IllegalArgumentException(
+                "Manual update required: install standalone Catbud Core before using addons without embedded Core");
         }
         for (var rule : inventory.compatibility()) {
             boolean present = futureMods.contains(rule.modId());

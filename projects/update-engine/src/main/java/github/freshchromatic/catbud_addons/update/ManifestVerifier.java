@@ -80,12 +80,13 @@ public final class ManifestVerifier {
                     throw new IllegalArgumentException("Invalid embedded addon metadata");
                 }
             }
-            if (!provided.contains(module.modId()) || !provided.contains(AddonModule.CORE.modId()) || provided
-                .size() != (module == AddonModule.CORE ? 1 : 2) || !artifact.loaderRange().equals(artifact.requires()
-                    .get("fabricloader")) || !("~" + artifact.minecraft()).equals(artifact.requires().get("minecraft"))
-                || !(">=" + artifact.javaMinimum()).equals(artifact.requires().get("java")) || !"*".equals(artifact
-                    .requires().get("fabric-api")) || (module != AddonModule.CORE && !(">=" + artifact.version())
-                        .equals(artifact.requires().get(AddonModule.CORE.modId())))) {
+            boolean embeddedCore = module != AddonModule.CORE && provided.contains(AddonModule.CORE.modId());
+            if (!provided.contains(module.modId()) || provided.size() != (embeddedCore ? 2 : 1) || !artifact
+                .loaderRange().equals(artifact.requires().get("fabricloader")) || !("~" + artifact.minecraft()).equals(
+                    artifact.requires().get("minecraft")) || !(">=" + artifact.javaMinimum()).equals(artifact.requires()
+                        .get("java")) || !"*".equals(artifact.requires().get("fabric-api"))
+                || (module != AddonModule.CORE && !(">=" + artifact.version()).equals(artifact.requires().get(
+                    AddonModule.CORE.modId())))) {
                 throw new IllegalArgumentException("Incomplete release dependency metadata");
             }
             int dependencyCount = module == AddonModule.CORE ? 4 : 5;

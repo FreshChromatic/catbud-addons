@@ -6,7 +6,7 @@ const version = '1.0.4';
 export const tag = 'v' + version;
 const root = 'https://github.com/FreshChromatic/catbud-addons/releases/';
 
-export function signedRelease(modules = Object.keys(MODULES)) {
+export function signedRelease(modules = Object.keys(MODULES), embeddedCore = true) {
   const pair = generateKeyPairSync('ed25519');
   const keys = { test: pair.publicKey.export({ type: 'spki', format: 'der' }).toString('base64') };
   const artifacts = Object.entries(MODULES)
@@ -22,7 +22,9 @@ export function signedRelease(modules = Object.keys(MODULES)) {
       const provides = [{ modId, version }];
       if (module !== 'core') {
         requires.catbud_core = '>=' + version;
-        provides.push({ modId: 'catbud_core', version });
+        if (embeddedCore) {
+          provides.push({ modId: 'catbud_core', version });
+        }
       }
       return {
         id: module + ':26.2',

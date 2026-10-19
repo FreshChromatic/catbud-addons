@@ -52,7 +52,6 @@ dependencies {
         } else {
             implementation core
         }
-        include core
     }
 }
 def javaTarget = legacy ? 21 : 25

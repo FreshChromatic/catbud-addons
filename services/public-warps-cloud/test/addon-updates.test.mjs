@@ -10,7 +10,7 @@ import { NoticeService } from '../src/addons/notice-service.mjs';
 import { PublicCache } from '../src/public-cache.mjs';
 import { WarpApplication } from '../src/worker.mjs';
 import { AddonMaintenance } from '../src/addons/addon-maintenance.mjs';
-import { verifyManifest } from '../src/addons/release-manifest.mjs';
+import { verifyManifest, validateManifest } from '../src/addons/release-manifest.mjs';
 import { AddonManagementApplication } from '../src/addons/addon-management-application.mjs';
 
 async function fixture(context) {
@@ -188,6 +188,36 @@ test('a three-module release can be imported and promoted without Monster Wave',
     JSON.parse(catalog.envelope.manifest).artifacts.map((artifact) => artifact.module),
     ['core', 'magic_tower', 'public_warps'],
   );
+});
+
+test('thin addons with a separate Core can be signed, imported and promoted', async (context) => {
+  const { repository, publicApi } = await fixture(context);
+  const release = signedRelease(['core', 'magic_tower', 'public_warps'], false);
+  const service = new ReleasePublicationService(
+    repository,
+    { ADDON_RELEASE_KEYS: JSON.stringify(release.keys) },
+    release.fetcher,
+  );
+  await service.import({ requestId: crypto.randomUUID(), expectedRevision: 0, tag }, 'admin@test');
+  await service.change(
+    tag,
+    'promote',
+    { requestId: crypto.randomUUID(), expectedRevision: 1 },
+    'admin@test',
+  );
+  const response = await publicApi.handle(
+    new Request('https://api.test/addons/v1/catalog?minecraft=26.2'),
+  );
+  const envelope = (await response.json()).envelope;
+  const manifest = await verifyManifest(envelope, release.keys);
+  assert.equal(manifest.artifacts.length, 3);
+  assert.ok(manifest.artifacts.every((artifact) => artifact.provides.length === 1));
+  const invalid = structuredClone(manifest);
+  invalid.artifacts[1].provides.push({ modId: 'catbud_public_warps', version: invalid.version });
+  assert.throws(() => validateManifest(invalid), /Invalid provided mod metadata/);
+  const missingCoreDependency = structuredClone(manifest);
+  delete missingCoreDependency.artifacts[1].requires.catbud_core;
+  assert.throws(() => validateManifest(missingCoreDependency), /Unsupported artifact dependencies/);
 });
 
 test('incomplete release matrices cannot be promoted', async (context) => {
