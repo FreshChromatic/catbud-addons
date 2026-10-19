@@ -19,6 +19,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 public final class ReleaseTool {
@@ -31,9 +32,9 @@ public final class ReleaseTool {
             generateKey(Path.of(args[1]), args[2]);
             return;
         }
-        if (args.length != 9 || !args[0].equals("manifest")) {
+        if ((args.length != 9 && args.length != 10) || !args[0].equals("manifest")) {
             throw new IllegalArgumentException(
-                "Expected keygen directory keyId or manifest version commit privateKey keyId artifactDir outputDir notesJson publicKeysJson");
+                "Expected keygen directory keyId or manifest version commit privateKey keyId artifactDir outputDir notesJson publicKeysJson [modulesJson]");
         }
         var gson = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
         String version = args[1];
@@ -46,8 +47,9 @@ public final class ReleaseTool {
             throw new IllegalArgumentException("Release output directory must be new");
         }
         var entries = new ArrayList<ReleaseManifest.Artifact>();
+        List<AddonModule> modules = args.length == 10 ? modules(Path.of(args[9])) : List.of(AddonModule.values());
         for (String minecraft : ReleaseManifest.MINECRAFT_VERSIONS) {
-            for (AddonModule module : AddonModule.values()) {
+            for (AddonModule module : modules) {
                 String file = "catbud-" + module.id() + "-" + minecraft + "-" + version + ".jar";
                 Path jar = artifacts.resolve(file);
                 JarMetadata metadata = JarMetadata.read(jar);
@@ -61,8 +63,9 @@ public final class ReleaseTool {
         var notesJson = com.google.gson.JsonParser.parseString(Files.readString(Path.of(args[7]))).getAsJsonObject();
         Map<String, String> notes = new LinkedHashMap<>();
         for (var note : notesJson.entrySet()) {
-            AddonModule.require(note.getKey());
-            notes.put(note.getKey(), note.getValue().getAsString());
+            if (modules.contains(AddonModule.require(note.getKey()))) {
+                notes.put(note.getKey(), note.getValue().getAsString());
+            }
         }
         var manifest = new ReleaseManifest(1, "v" + version, version, "stable", Instant.now().toString(),
             ReleaseManifest.REPOSITORY, "v" + version, "https://github.com/" + ReleaseManifest.REPOSITORY
@@ -91,6 +94,21 @@ public final class ReleaseTool {
             Files.copy(artifacts.resolve(artifact.file()), output.resolve(artifact.file()));
         }
         System.out.println("Prepared " + entries.size() + " verified release artifacts in " + output.toAbsolutePath());
+    }
+
+    private static List<AddonModule> modules(Path file) throws Exception {
+        var modules = new ArrayList<AddonModule>();
+        for (var value : com.google.gson.JsonParser.parseString(Files.readString(file)).getAsJsonArray()) {
+            AddonModule module = AddonModule.require(value.getAsString());
+            if (modules.contains(module)) {
+                throw new IllegalArgumentException("Duplicate release module: " + module.id());
+            }
+            modules.add(module);
+        }
+        if (!modules.containsAll(List.of(AddonModule.CORE, AddonModule.MAGIC_TOWER, AddonModule.PUBLIC_WARPS))) {
+            throw new IllegalArgumentException("A release requires Core, Magic Tower and Public Warps");
+        }
+        return List.copyOf(modules);
     }
 
     private static void generateKey(Path directory, String keyId) throws Exception {

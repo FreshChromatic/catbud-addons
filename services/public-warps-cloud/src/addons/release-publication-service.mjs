@@ -94,20 +94,22 @@ export class ReleasePublicationService {
         throw new ApiError(409, 'Release assets changed since import');
       }
       const targets = new Set(fresh.manifest.artifacts.map((artifact) => artifact.minecraft));
+      const requiredModules = new Set([
+        'core',
+        'magic_tower',
+        'public_warps',
+        ...fresh.manifest.artifacts.map((artifact) => artifact.module),
+      ]);
       for (const minecraft of targets) {
         const modules = new Set(
           fresh.manifest.artifacts
             .filter((artifact) => artifact.minecraft === minecraft)
             .map((artifact) => artifact.module),
         );
-        if (
-          !['core', 'magic_tower', 'public_warps', 'monster_wave'].every((module) =>
-            modules.has(module),
-          )
-        ) {
+        if (![...requiredModules].every((module) => modules.has(module))) {
           throw new ApiError(
             400,
-            'A target must include all four addon artifacts before promotion',
+            'Each game version must include Core, Magic Tower, Public Warps and every selected release module',
           );
         }
         statements.push(

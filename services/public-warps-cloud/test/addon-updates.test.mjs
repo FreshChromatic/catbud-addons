@@ -163,6 +163,33 @@ test('concurrent promotion and deletion cannot leave dangling recommendations', 
   );
 });
 
+test('a three-module release can be imported and promoted without Monster Wave', async (context) => {
+  const { repository, publicApi } = await fixture(context);
+  const release = signedRelease(['core', 'magic_tower', 'public_warps']);
+  const service = new ReleasePublicationService(
+    repository,
+    { ADDON_RELEASE_KEYS: JSON.stringify(release.keys) },
+    release.fetcher,
+  );
+  await service.import({ requestId: crypto.randomUUID(), expectedRevision: 0, tag }, 'admin@test');
+  await service.change(
+    tag,
+    'promote',
+    { requestId: crypto.randomUUID(), expectedRevision: 1 },
+    'admin@test',
+  );
+  const response = await publicApi.handle(
+    new Request('https://api.test/addons/v1/catalog?minecraft=26.2'),
+  );
+  assert.equal(response.headers.get('X-Catbud-Release-Id'), tag);
+  const catalog = await response.json();
+  assert.equal(catalog.state, 'available');
+  assert.deepEqual(
+    JSON.parse(catalog.envelope.manifest).artifacts.map((artifact) => artifact.module),
+    ['core', 'magic_tower', 'public_warps'],
+  );
+});
+
 test('incomplete release matrices cannot be promoted', async (context) => {
   const { repository, database } = await fixture(context);
   const release = signedRelease(['core', 'magic_tower']);

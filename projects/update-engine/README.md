@@ -2,7 +2,7 @@
 
 更新核心為不依賴 Minecraft 的 Java 21 程式庫。Core 在四個遊戲版本使用同一套版本、簽章、盤點、下載及通知規則；獨立安裝 JAR 只包含 JDK 相依的 `update.install` package。
 
-目前模組為 Core、Magic Tower、公共傳點、怪物波次，支援 1.21.11、26.1.2、26.2、26.3。一次新發版共有十六個可安裝 JAR。
+程式支援 Core、Magic Tower、公共傳點、怪物波次，目標遊戲為 1.21.11、26.1.2、26.2、26.3。實際發版模組由 `release/modules.json` 明列，目前只發布 Core、Magic Tower、公共傳點，共十二個可安裝 JAR。需要發布怪物波次時再將 `monster_wave` 加入清單。
 
 ## 玩家操作
 
@@ -51,7 +51,7 @@
 
 預設產物位於 `out/releases/v<version>/`。目錄必須尚不存在；可用 `-OutputDirectory` 明確指定其他新目錄。新建版本的 `mod_version` 與 `core_version` 必須一致。工具只準備檔案，不會提交 Git、推送 tag 或發布 GitHub Release。
 
-建立對應提交的 `v<version>` GitHub 草稿，將該目錄的十六個 JAR、`release-manifest.json`、`release-manifest.sig` 上傳並審閱後發布。建議啟用 GitHub immutable releases；相同版本不要覆寫產物。
+建立對應提交的 `v<version>` GitHub 草稿，將該目錄的所有 JAR、`release-manifest.json`、`release-manifest.sig` 上傳並審閱後發布。目前為十二個 JAR 加兩份清單，共十四個附件。不要手動移除仍被簽署清單列出的附件；改變發版模組時必須重新產生並簽署清單。建議啟用 GitHub immutable releases；相同版本不要覆寫產物。
 
 目前 GitHub 舊 Release 沒有簽署清單，不能直接匯入自動安裝。第一個含更新器的版本需要先由玩家手動安裝；之後才能使用這套更新流程。
 
@@ -69,7 +69,7 @@ GET /addons/v1/status
 
 公開目錄只讀已核准快照，不因玩家查詢抓取 GitHub。不傳玩家名稱、UUID 或投稿憑證。目錄以遊戲版本及 stable 指標選取；沒有相容版本、服務故障及已是最新版是不同狀態。
 
-`/addons.html` 是管理入口，沿用 Access、CSRF、同源、requestId、expectedRevision 及稽核。匯入後核對簽章、附件與 tag 提交，管理者再核准對外推薦。多版本指標與稽核在同一 D1 交易生效；重送回傳同一結果，競爭修訂不會半批發布。公告需先儲存草稿再發布，已發布內容先撤回才能編輯。
+`/addons.html` 是管理入口，沿用 Access、CSRF、同源、requestId、expectedRevision 及稽核。匯入後核對簽章、附件與 tag 提交，管理者再核准對外推薦。每個遊戲版本均須包含 Core、Magic Tower、公共傳點，以及該版選定的其他模組，才可核准。多版本指標與稽核在同一 D1 交易生效；重送回傳同一結果，競爭修訂不會半批發布。公告需先儲存草稿再發布，已發布內容先撤回才能編輯。
 
 未被任何遊戲版本推薦的版本可以在詳情頂端「刪除版本」，經確認後從管理清單移除。仍被推薦時須先撤回；刪除保留操作紀錄，不刪除 GitHub Release 或玩家檔案。GitHub 來源仍完整時可重新匯入。刪除沿用修訂衝突檢查與 requestId 重送保護。
 

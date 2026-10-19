@@ -40,7 +40,8 @@ try {
         "-PreleaseArtifactDirectory=$(Join-Path $releaseWorkspace 'out')",
         "-PreleaseOutputDirectory=$releaseOutput",
         "-PreleaseNotesFile=$(Join-Path $releaseWorkspace 'release/notes.json')",
-        "-PreleaseKeysFile=$(Join-Path $releaseWorkspace 'release/keys.json')", '--console=plain'
+        "-PreleaseKeysFile=$(Join-Path $releaseWorkspace 'release/keys.json')",
+        "-PreleaseModulesFile=$(Join-Path $releaseWorkspace 'release/modules.json')", '--console=plain'
     )
     & $releaseJava -classpath $releaseWrapper org.gradle.wrapper.GradleWrapperMain @releaseArguments
     if ($LASTEXITCODE -ne 0) { throw 'Release manifest verification or signing failed.' }

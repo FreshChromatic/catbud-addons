@@ -167,7 +167,7 @@ function showRelease(release, channels) {
       if (
         await confirm(
           '核准 ' + release.id,
-          '此版本將向符合遊戲版本的玩家提供更新。請先核對四個模組、更新摘要及版本。',
+          '此版本將向符合遊戲版本的玩家提供更新。請先核對本版模組、更新摘要及版本。',
         )
       ) {
         await write(`releases/${release.id}/promote`, {});

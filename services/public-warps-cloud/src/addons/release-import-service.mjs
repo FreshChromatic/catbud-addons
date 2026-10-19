@@ -12,7 +12,13 @@ export class ReleaseImportService {
     const headers = {
       'User-Agent': 'Catbud-Release-Importer/1',
       Accept: 'application/vnd.github+json',
+      'Cache-Control': 'no-cache',
     };
+    const initial = new URL(url);
+    let source = 'GitHub 簽署清單附件';
+    if (initial.hostname === 'api.github.com') {
+      source = initial.pathname.includes('/git/') ? 'GitHub 版本標籤' : 'GitHub Release 資料';
+    }
     if (this.env.ADDON_GITHUB_TOKEN && new URL(url).hostname === 'api.github.com') {
       headers.Authorization = 'Bearer ' + this.env.ADDON_GITHUB_TOKEN;
     }
@@ -33,11 +39,15 @@ export class ReleaseImportService {
       ) {
         throw new ApiError(400, 'Untrusted release source');
       }
-      response = await this.fetcher.call(globalThis, url, {
-        headers,
-        redirect: 'manual',
-        signal: AbortSignal.timeout(15000),
-      });
+      try {
+        response = await this.fetcher.call(globalThis, url, {
+          headers,
+          redirect: 'manual',
+          signal: AbortSignal.timeout(15000),
+        });
+      } catch {
+        throw new ApiError(503, `${source}連線失敗或逾時，請稍後重試`);
+      }
       if ([301, 302, 303, 307, 308].includes(response.status)) {
         await response.body?.cancel();
         url = new URL(response.headers.get('Location'), url).toString();
@@ -46,7 +56,16 @@ export class ReleaseImportService {
       }
       if (response.status !== 200) {
         await response.body?.cancel();
-        throw new ApiError(503, 'GitHub release is unavailable');
+        if (
+          response.status === 429 ||
+          (response.status === 403 && response.headers.get('X-RateLimit-Remaining') === '0')
+        ) {
+          throw new ApiError(503, `GitHub API 已達請求上限，請稍後重試（HTTP ${response.status}）`);
+        }
+        if (response.status === 404) {
+          throw new ApiError(503, `找不到${source}（HTTP 404），請確認版本已公開且附件完整`);
+        }
+        throw new ApiError(503, `${source}暫時無法讀取（HTTP ${response.status}），請稍後重試`);
       }
       const text = new TextDecoder('utf-8', { fatal: true }).decode(
         await boundedBytes(response.body, limit),
@@ -102,7 +121,7 @@ export class ReleaseImportService {
         asset.digest !== 'sha256:' + artifact.sha256 ||
         asset.state !== 'uploaded'
       ) {
-        throw new ApiError(400, 'Release asset metadata does not match signed manifest');
+        throw new ApiError(400, `版本附件缺少或與簽署清單不符：${artifact.file}`);
       }
       snapshot.push({ id: asset.id, file: artifact.file, size: asset.size, digest: asset.digest });
     }
