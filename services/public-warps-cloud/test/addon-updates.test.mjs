@@ -11,6 +11,7 @@ import { PublicCache } from '../src/public-cache.mjs';
 import { WarpApplication } from '../src/worker.mjs';
 import { AddonMaintenance } from '../src/addons/addon-maintenance.mjs';
 import { verifyManifest } from '../src/addons/release-manifest.mjs';
+import { AddonManagementApplication } from '../src/addons/addon-management-application.mjs';
 
 async function fixture(context) {
   const runtime = new Miniflare(
@@ -34,6 +35,133 @@ async function fixture(context) {
     publicApi: new AddonPublicApplication(database, now),
   };
 }
+
+test('deleting an unavailable release removes its listing, preserves audit and safely replays after reimport', async (context) => {
+  const { repository, database } = await fixture(context);
+  const release = signedRelease();
+  const env = { DB: database, ADDON_RELEASE_KEYS: JSON.stringify(release.keys) };
+  const service = new ReleasePublicationService(repository, env, release.fetcher);
+  await service.import({ requestId: crypto.randomUUID(), expectedRevision: 0, tag }, 'admin@test');
+  await database
+    .prepare('UPDATE addon_releases SET validation_error=? WHERE id=?')
+    .bind('GitHub release is unavailable', tag)
+    .run();
+  let upstreamCalls = 0;
+  const management = new AddonManagementApplication(env, now, async () => {
+    upstreamCalls++;
+    throw new Error('Deleting a local record must not require GitHub');
+  });
+  const value = { requestId: crypto.randomUUID(), expectedRevision: 1 };
+  const remove = () =>
+    management.handle(
+      new Request(`https://admin.test/api/addons/releases/${tag}/delete`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(value),
+      }),
+      { actor: 'admin@test' },
+    );
+  const result = await (await remove()).json();
+  assert.equal(result.action, 'delete');
+  assert.equal(result.revision, 2);
+  const listing = await management.handle(new Request('https://admin.test/api/addons/releases'), {
+    actor: 'admin@test',
+  });
+  assert.deepEqual((await listing.json()).releases, []);
+  assert.equal(await database.prepare('SELECT COUNT(*) AS n FROM addon_operations').first('n'), 2);
+  assert.equal(
+    await database
+      .prepare('SELECT action FROM addon_operations WHERE request_id=?')
+      .bind(value.requestId)
+      .first('action'),
+    `releases/${tag}/delete`,
+  );
+  assert.deepEqual(await (await remove()).json(), result);
+  assert.equal(upstreamCalls, 0);
+  await assert.rejects(service.remove(tag, value, 'another@test'), { status: 409 });
+  await assert.rejects(
+    service.remove(tag, { requestId: crypto.randomUUID(), expectedRevision: 2 }, 'admin@test'),
+    { status: 404 },
+  );
+  await service.import({ requestId: crypto.randomUUID(), expectedRevision: 2, tag }, 'admin@test');
+  assert.deepEqual(await (await remove()).json(), result);
+  assert.equal(await database.prepare('SELECT COUNT(*) AS n FROM addon_releases').first('n'), 1);
+  assert.equal((await repository.state()).revision, 3);
+});
+
+test('recommended releases must be withdrawn before deletion and stale deletions cannot remove records', async (context) => {
+  const { repository, database, publicApi } = await fixture(context);
+  const release = signedRelease();
+  const service = new ReleasePublicationService(
+    repository,
+    { ADDON_RELEASE_KEYS: JSON.stringify(release.keys) },
+    release.fetcher,
+  );
+  await service.import({ requestId: crypto.randomUUID(), expectedRevision: 0, tag }, 'admin@test');
+  await service.change(
+    tag,
+    'promote',
+    { requestId: crypto.randomUUID(), expectedRevision: 1 },
+    'admin@test',
+  );
+  await assert.rejects(
+    service.remove(tag, { requestId: crypto.randomUUID(), expectedRevision: 2 }, 'admin@test'),
+    { status: 409 },
+  );
+  assert.equal(
+    await database.prepare('SELECT COUNT(*) AS n FROM addon_release_channels').first('n'),
+    1,
+  );
+  await service.change(
+    tag,
+    'withdraw',
+    { requestId: crypto.randomUUID(), expectedRevision: 2 },
+    'admin@test',
+  );
+  await assert.rejects(
+    service.remove(tag, { requestId: crypto.randomUUID(), expectedRevision: 2 }, 'admin@test'),
+    { status: 409 },
+  );
+  assert.equal(await database.prepare('SELECT COUNT(*) AS n FROM addon_releases').first('n'), 1);
+  await service.remove(tag, { requestId: crypto.randomUUID(), expectedRevision: 3 }, 'admin@test');
+  assert.equal(await database.prepare('SELECT COUNT(*) AS n FROM addon_releases').first('n'), 0);
+  const catalog = await publicApi.handle(
+    new Request('https://api.test/addons/v1/catalog?minecraft=26.2'),
+  );
+  assert.equal((await catalog.json()).state, 'no_compatible_release');
+  assert.equal((await repository.state()).revision, 4);
+});
+
+test('concurrent promotion and deletion cannot leave dangling recommendations', async (context) => {
+  const { repository, database } = await fixture(context);
+  const release = signedRelease();
+  const service = new ReleasePublicationService(
+    repository,
+    { ADDON_RELEASE_KEYS: JSON.stringify(release.keys) },
+    release.fetcher,
+  );
+  await service.import({ requestId: crypto.randomUUID(), expectedRevision: 0, tag }, 'admin@test');
+  const results = await Promise.allSettled([
+    service.change(
+      tag,
+      'promote',
+      { requestId: crypto.randomUUID(), expectedRevision: 1 },
+      'admin@test',
+    ),
+    service.remove(tag, { requestId: crypto.randomUUID(), expectedRevision: 1 }, 'admin@test'),
+  ]);
+  assert.equal(results.filter((result) => result.status === 'fulfilled').length, 1);
+  assert.equal(results.find((result) => result.status === 'rejected').reason.status, 409);
+  assert.equal((await repository.state()).revision, 2);
+  assert.equal(
+    await database
+      .prepare(
+        'SELECT COUNT(*) AS n FROM addon_release_channels c LEFT JOIN addon_releases r ON r.id=c.release_id WHERE r.id IS NULL',
+      )
+      .first('n'),
+    0,
+  );
+});
 
 test('incomplete release matrices cannot be promoted', async (context) => {
   const { repository, database } = await fixture(context);

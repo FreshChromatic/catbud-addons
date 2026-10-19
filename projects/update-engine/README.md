@@ -71,6 +71,8 @@ GET /addons/v1/status
 
 `/addons.html` 是管理入口，沿用 Access、CSRF、同源、requestId、expectedRevision 及稽核。匯入後核對簽章、附件與 tag 提交，管理者再核准對外推薦。多版本指標與稽核在同一 D1 交易生效；重送回傳同一結果，競爭修訂不會半批發布。公告需先儲存草稿再發布，已發布內容先撤回才能編輯。
 
+未被任何遊戲版本推薦的版本可以在詳情頂端「刪除版本」，經確認後從管理清單移除。仍被推薦時須先撤回；刪除保留操作紀錄，不刪除 GitHub Release 或玩家檔案。GitHub 來源仍完整時可重新匯入。刪除沿用修訂衝突檢查與 requestId 重送保護。
+
 公開快取最多 60 秒，下載及安裝前的核准重查略過快取。每日檢查 GitHub 已核准產物；異常會停止提供安裝核准。新增 ADDON_BURST binding 限制更新端點流量，不共享傳點上游資格配額。
 
 正式上線順序：先備份 D1，套用新增 migration，部署 api（含 ADDON_BURST）及 control，再在管理頁匯入並核准已公開的簽署 Release。不要只部署 Worker 而漏掉 migration。實作與本機驗證不等於已完成正式部署。

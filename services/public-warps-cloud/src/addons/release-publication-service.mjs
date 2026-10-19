@@ -42,6 +42,35 @@ export class ReleasePublicationService {
     );
   }
 
+  async remove(id, value, actor) {
+    const action = `releases/${id}/delete`;
+    const previous = await this.repository.replay(actor, value, action);
+    if (previous) {
+      return previous;
+    }
+    const current = await this.database
+      .prepare('SELECT version FROM addon_releases WHERE id=?')
+      .bind(id)
+      .first();
+    if (!current) {
+      throw new ApiError(404, 'Release not found');
+    }
+    const recommended = await this.database
+      .prepare('SELECT 1 FROM addon_release_channels WHERE release_id=? LIMIT 1')
+      .bind(id)
+      .first();
+    if (recommended) {
+      throw new ApiError(409, 'Withdraw all recommendations before deleting this release');
+    }
+    return this.repository.mutate(
+      actor,
+      value,
+      action,
+      [this.database.prepare('DELETE FROM addon_releases WHERE id=?').bind(id)],
+      { id, version: current.version, action: 'delete' },
+    );
+  }
+
   async change(id, command, value, actor) {
     const action = `releases/${id}/${command}`;
     const previous = await this.repository.replay(actor, value, action);

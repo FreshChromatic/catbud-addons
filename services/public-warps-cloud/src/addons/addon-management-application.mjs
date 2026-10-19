@@ -65,8 +65,11 @@ export class AddonManagementApplication {
     if (path === 'releases/import') {
       return json(await this.releases.import(value, identity.actor));
     }
-    const release = /^releases\/(v[0-9]+\.[0-9]+\.[0-9]+)\/(promote|withdraw)$/.exec(path);
+    const release = /^releases\/(v[0-9]+\.[0-9]+\.[0-9]+)\/(promote|withdraw|delete)$/.exec(path);
     if (release) {
+      if (release[2] === 'delete') {
+        return json(await this.releases.remove(release[1], value, identity.actor));
+      }
       return json(await this.releases.change(release[1], release[2], value, identity.actor));
     }
     const notice = /^notices\/([0-9a-f-]{36})\/(save|publish|withdraw)$/.exec(path);

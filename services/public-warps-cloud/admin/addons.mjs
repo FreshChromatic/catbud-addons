@@ -51,7 +51,7 @@ async function confirm(title, description) {
     }),
   );
 }
-async function write(path, value) {
+async function write(path, value, successMessage = '已儲存。') {
   if (state.busy) {
     return;
   }
@@ -59,7 +59,7 @@ async function write(path, value) {
   try {
     await client.request('addons/' + path, { ...value, expectedRevision: state.revision });
     await load();
-    message('已儲存。');
+    message(successMessage);
   } finally {
     state.busy = false;
   }
@@ -110,19 +110,32 @@ async function load() {
 }
 function showRelease(release, channels) {
   const detail = $('detail');
+  const recommended = channels.filter((channel) => channel.release_id === release.id);
   detail.replaceChildren(node('h2', release.id));
   detail.append(
     node(
       'p',
-      '目前推薦：' +
-        (channels
-          .filter((channel) => channel.release_id === release.id)
-          .map((channel) => channel.minecraft)
-          .join('、') || '尚未推薦'),
+      '目前推薦：' + (recommended.map((channel) => channel.minecraft).join('、') || '尚未推薦'),
     ),
   );
   if (release.error) {
     detail.append(node('p', '驗證異常：' + release.error));
+  }
+  const remove = button('刪除版本', async () => {
+    if (
+      await confirm(
+        '刪除 ' + release.id,
+        '將此版本從管理清單移除，保留操作紀錄。此操作不會刪除 GitHub Release 或玩家已安裝的檔案；GitHub 來源仍完整時可重新匯入。確定刪除？',
+      )
+    ) {
+      await write(`releases/${release.id}/delete`, {}, '已刪除版本，操作紀錄已保留。');
+    }
+  });
+  remove.className = 'danger';
+  remove.disabled = recommended.length > 0;
+  detail.append(remove);
+  if (recommended.length > 0) {
+    detail.append(node('p', '此版本仍在推薦中，請先撤回推薦再刪除。'));
   }
   for (const [module, note] of Object.entries(release.manifest.notes)) {
     detail.append(node('p', `${moduleNames[module]}：${note}`));
