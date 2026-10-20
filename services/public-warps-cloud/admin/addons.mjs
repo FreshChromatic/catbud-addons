@@ -82,7 +82,7 @@ async function load() {
     tag.input.maxLength = 128;
     $('detail').append(
       node('h2', '匯入已發布版本'),
-      node('p', '匯入後先核對產物與相容版本，再決定核准。'),
+      node('p', '匯入後先核對產物與相容版本，再決定核准。同版本修訂請使用新標籤，例如 v1.0.2-r2；再次修訂改用 r3。'),
       tag.wrapper,
       button('匯入並驗證', () => write('releases/import', { tag: tag.input.value.trim() })),
     );

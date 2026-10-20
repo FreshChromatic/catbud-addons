@@ -27,5 +27,13 @@ public record ReleaseManifest(int schemaVersion, String releaseId, String versio
             provides = List.copyOf(provides);
             requires = Map.copyOf(requires);
         }
+
+        public ReleaseRevision releaseRevision() {
+            return ReleaseRevision.installed(version, module, minecraft, file);
+        }
+
+        public String reminderId() {
+            return "update:" + module + ":" + releaseRevision().key();
+        }
     }
 }

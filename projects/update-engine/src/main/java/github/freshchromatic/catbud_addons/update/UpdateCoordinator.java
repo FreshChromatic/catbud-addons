@@ -105,7 +105,7 @@ public final class UpdateCoordinator implements AutoCloseable {
     public int updateCount() {
         return snapshot.plan() == null ? 0
             : (int) snapshot.plan().replacements().stream().filter(item -> !notifications.skipped(item.artifact()
-                .module(), item.artifact().version())).count();
+                .module(), item.artifact().releaseRevision().key())).count();
     }
 
     public void tick(String server) {

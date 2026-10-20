@@ -24,6 +24,62 @@ class UpdatePlannerTest {
     @TempDir Path temporary;
 
     @Test
+    void plansChangedFilesForANewerRevisionAndSkipsIdenticalFiles() throws Exception {
+        Path mods = Files.createDirectory(temporary.resolve("revision-mods"));
+        var original = manifest("1.0.4", false);
+        for (var artifact : original.artifacts()) {
+            Files.copy(temporary.resolve("assets-1.0.4-standalone").resolve(artifact.file()), mods.resolve(artifact
+                .file()));
+        }
+        var inventory = InstalledAddonInventory.scan(mods, List.of("catbud_core", "catbud_addons",
+            "catbud_public_warps", "catbud_monster_wave"));
+        var revised = revision(original, 2);
+        var plan = UpdatePlanner.plan(revised, inventory, "26.2", "0.19.5", 25);
+        assertEquals("v1.0.4-r2", plan.releaseId());
+        assertEquals(1, plan.replacements().size());
+        assertEquals("catbud-core-26.2-1.0.4-r2.jar", plan.replacements().getFirst().artifact().file());
+        assertTrue(UpdatePlanner.plan(original, inventory, "26.2", "0.19.5", 25).replacements().isEmpty());
+
+        Path core = mods.resolve("catbud-core-26.2-1.0.4.jar");
+        Files.move(core, mods.resolve("catbud-core-26.2-1.0.4-r3.jar"));
+        var newer = InstalledAddonInventory.scan(mods, List.of("catbud_core", "catbud_addons", "catbud_public_warps",
+            "catbud_monster_wave"));
+        assertThrows(IllegalArgumentException.class, () -> UpdatePlanner.plan(revised, newer, "26.2", "0.19.5", 25));
+        assertThrows(IllegalArgumentException.class, () -> UpdatePlanner.plan(revision(original, 3), newer, "26.2",
+            "0.19.5", 25));
+        assertEquals(1, UpdatePlanner.plan(revision(original, 4), newer, "26.2", "0.19.5", 25).replacements().size());
+    }
+
+    @Test
+    void revisionMetadataCannotReuseOldFilenamesOrDownloadUrls() throws Exception {
+        var revised = revision(manifest("1.0.4", false), 2);
+        ManifestVerifier.validate(revised);
+        var invalid = new Gson().toJsonTree(revised).getAsJsonObject();
+        invalid.getAsJsonArray("artifacts").get(0).getAsJsonObject().addProperty("file", "catbud-core-26.2-1.0.4.jar");
+        var wrongFile = new Gson().fromJson(invalid, ReleaseManifest.class);
+        assertThrows(IllegalArgumentException.class, () -> ManifestVerifier.validate(wrongFile));
+        invalid = new Gson().toJsonTree(revised).getAsJsonObject();
+        invalid.addProperty("tag", "v1.0.5-r2");
+        var wrongVersion = new Gson().fromJson(invalid, ReleaseManifest.class);
+        assertThrows(IllegalArgumentException.class, () -> ManifestVerifier.validate(wrongVersion));
+    }
+
+    private static ReleaseManifest revision(ReleaseManifest original, int number) {
+        var revision = new ReleaseRevision(original.version(), number);
+        var artifacts = original.artifacts().stream().map(artifact -> {
+            String file = revision.file(artifact.module(), artifact.minecraft());
+            return new ReleaseManifest.Artifact(artifact.id(), artifact.module(), artifact.modId(), artifact
+                .minecraft(), artifact.loaderRange(), artifact.javaMinimum(), artifact.version(), file,
+                "https://github.com/FreshChromatic/catbud-addons/releases/download/" + revision.tag() + "/" + file,
+                artifact.size(), artifact.module().equals("core") ? "b".repeat(64) : artifact.sha256(), artifact
+                    .provides(), artifact.requires());
+        }).toList();
+        return new ReleaseManifest(1, revision.tag(), original.version(), "stable", original.publishedAt(), original
+            .repository(), revision.tag(), "https://github.com/FreshChromatic/catbud-addons/releases/tag/" + revision
+                .tag(), original.commit(), artifacts, original.notes());
+    }
+
+    @Test
     void plansEachSupportedInstallationTopologyWithoutAddingModules() throws Exception {
         var combinations = List.of(List.of(AddonModule.CORE), List.of(AddonModule.MAGIC_TOWER), List.of(
             AddonModule.MAGIC_TOWER, AddonModule.PUBLIC_WARPS), List.of(AddonModule.CORE, AddonModule.MAGIC_TOWER,

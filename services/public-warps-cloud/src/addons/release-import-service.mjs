@@ -1,5 +1,5 @@
 import { ApiError, boundedBytes } from '../protocol.mjs';
-import { REPOSITORY, verifyManifest } from './release-manifest.mjs';
+import { REPOSITORY, parseReleaseTag, verifyManifest } from './release-manifest.mjs';
 import trustedReleaseKeys from '../../../../release/keys.json' with { type: 'json' };
 
 export class ReleaseImportService {
@@ -76,8 +76,10 @@ export class ReleaseImportService {
   }
 
   async import(tag) {
-    if (!/^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$/.test(tag ?? '')) {
-      throw new ApiError(400, 'A stable vMAJOR.MINOR.PATCH tag is required');
+    try {
+      parseReleaseTag(tag);
+    } catch (error) {
+      throw new ApiError(400, error.message);
     }
     const release = await this.read(
       `https://api.github.com/repos/${REPOSITORY}/releases/tags/${tag}`,

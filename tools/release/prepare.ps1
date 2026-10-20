@@ -1,6 +1,7 @@
 param(
     [string]$SigningKey = '.local-state/release-signing/private-key.pkcs8',
     [string]$KeyId = 'catbud-2026',
+    [ValidateRange(1, 2147483647)][int]$Revision = 1,
     [string]$OutputDirectory
 )
 
@@ -20,12 +21,14 @@ try {
     if (-not $releaseVersion -or $releaseVersion -ne $releaseCoreVersion) {
         throw 'All addon and Core versions must match for this release format.'
     }
+    $releaseTag = "v$releaseVersion"
+    if ($Revision -gt 1) { $releaseTag += "-r$Revision" }
     $releasePrivateKey = if ([IO.Path]::IsPathRooted($SigningKey)) { $SigningKey } else { Join-Path $releaseWorkspace $SigningKey }
     if (-not (Test-Path -LiteralPath $releasePrivateKey -PathType Leaf)) { throw 'Release signing key is unavailable.' }
     $releaseOutput = if ($OutputDirectory) {
         [IO.Path]::GetFullPath($OutputDirectory)
     } else {
-        Join-Path $releaseWorkspace "out/releases/v$releaseVersion"
+        Join-Path $releaseWorkspace "out/releases/$releaseTag"
     }
     if (Test-Path -LiteralPath $releaseOutput) { throw 'Release output directory already exists; use a new directory.' }
     $releaseJava = if ($env:JAVA_HOME) { Join-Path $env:JAVA_HOME 'bin/java.exe' } else { (Get-Command java).Source }
@@ -36,6 +39,7 @@ try {
     $releaseArguments = @(
         ':update-engine:releaseManifest',
         "-PreleaseVersion=$releaseVersion", "-PreleaseCommit=$releaseCommit",
+        "-PreleaseRevision=$Revision",
         "-PreleaseSigningKey=$releasePrivateKey", "-PreleaseKeyId=$KeyId",
         "-PreleaseArtifactDirectory=$(Join-Path $releaseWorkspace 'out')",
         "-PreleaseOutputDirectory=$releaseOutput",

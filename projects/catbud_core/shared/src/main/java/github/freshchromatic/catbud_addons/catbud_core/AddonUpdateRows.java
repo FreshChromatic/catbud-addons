@@ -51,20 +51,19 @@ final class AddonUpdateRows {
                 var artifact = replacement.artifact();
                 rows.add(SettingsAddon.StatusRow.info(tr("updates.module." + artifact.module()), () -> Component
                     .translatable("updates.core.version", AddonUpdateClient.version(artifact.modId()), artifact
-                        .version())));
+                        .releaseRevision().displayVersion())));
                 String note = plan.notes().getOrDefault(artifact.module(), "");
                 rows.add(new SettingsAddon.StatusRow(tr("updates.core.notes"), () -> Component.literal(note), null,
                     () -> true, () -> Component.literal(note)));
             }
             rows.add(action("updates.core.skip", () -> tr("updates.core.skip"), () -> {
                 for (var item : plan.replacements()) {
-                    coordinator.notifications().skip(item.artifact().module(), item.artifact().version());
+                    coordinator.notifications().skip(item.artifact().module(), item.artifact().releaseRevision().key());
                 }
             }, () -> true));
             rows.add(action("updates.core.tomorrow", () -> tr("updates.core.tomorrow"), () -> {
                 for (var item : plan.replacements()) {
-                    coordinator.notifications().snooze("update:" + item.artifact().module() + ":" + item.artifact()
-                        .version(), System.currentTimeMillis());
+                    coordinator.notifications().snooze(item.artifact().reminderId(), System.currentTimeMillis());
                 }
             }, () -> true));
         }

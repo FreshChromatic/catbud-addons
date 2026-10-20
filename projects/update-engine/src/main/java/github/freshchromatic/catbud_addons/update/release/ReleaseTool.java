@@ -5,6 +5,7 @@ import github.freshchromatic.catbud_addons.update.AddonModule;
 import github.freshchromatic.catbud_addons.update.JarMetadata;
 import github.freshchromatic.catbud_addons.update.ManifestVerifier;
 import github.freshchromatic.catbud_addons.update.ReleaseManifest;
+import github.freshchromatic.catbud_addons.update.ReleaseRevision;
 import github.freshchromatic.catbud_addons.update.ReleaseVersion;
 import github.freshchromatic.catbud_addons.update.install.FileIntegrity;
 import java.nio.charset.StandardCharsets;
@@ -32,32 +33,33 @@ public final class ReleaseTool {
             generateKey(Path.of(args[1]), args[2]);
             return;
         }
-        if ((args.length != 9 && args.length != 10) || !args[0].equals("manifest")) {
+        if ((args.length < 9 || args.length > 11) || !args[0].equals("manifest")) {
             throw new IllegalArgumentException(
-                "Expected keygen directory keyId or manifest version commit privateKey keyId artifactDir outputDir notesJson publicKeysJson [modulesJson]");
+                "Expected keygen directory keyId or manifest version commit privateKey keyId artifactDir outputDir notesJson publicKeysJson [modulesJson [revision]]");
         }
         var gson = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
         String version = args[1];
         if (!ReleaseVersion.parse(version).stable()) {
             throw new IllegalArgumentException("Only stable releases are supported");
         }
+        var revision = new ReleaseRevision(version, args.length == 11 ? Integer.parseInt(args[10]) : 1);
         Path artifacts = Path.of(args[5]);
         Path output = Path.of(args[6]);
         if (Files.exists(output)) {
             throw new IllegalArgumentException("Release output directory must be new");
         }
         var entries = new ArrayList<ReleaseManifest.Artifact>();
-        List<AddonModule> modules = args.length == 10 ? modules(Path.of(args[9])) : List.of(AddonModule.values());
+        List<AddonModule> modules = args.length >= 10 ? modules(Path.of(args[9])) : List.of(AddonModule.values());
         for (String minecraft : ReleaseManifest.MINECRAFT_VERSIONS) {
             for (AddonModule module : modules) {
-                String file = "catbud-" + module.id() + "-" + minecraft + "-" + version + ".jar";
-                Path jar = artifacts.resolve(file);
+                String file = revision.file(module.id(), minecraft);
+                Path jar = artifacts.resolve(new ReleaseRevision(version, 1).file(module.id(), minecraft));
                 JarMetadata metadata = JarMetadata.read(jar);
                 entries.add(new ReleaseManifest.Artifact(module.id() + ":" + minecraft, module.id(), metadata.modId(),
                     minecraft, metadata.requires().get("fabricloader"), minecraft.equals("1.21.11") ? 21 : 25, metadata
-                        .version(), file, "https://github.com/" + ReleaseManifest.REPOSITORY + "/releases/download/v"
-                            + version + "/" + file, Files.size(jar), FileIntegrity.sha256(jar), metadata.provides(),
-                    metadata.requires()));
+                        .version(), file, "https://github.com/" + ReleaseManifest.REPOSITORY + "/releases/download/"
+                            + revision.tag() + "/" + file, Files.size(jar), FileIntegrity.sha256(jar), metadata
+                                .provides(), metadata.requires()));
             }
         }
         var notesJson = com.google.gson.JsonParser.parseString(Files.readString(Path.of(args[7]))).getAsJsonObject();
@@ -67,9 +69,9 @@ public final class ReleaseTool {
                 notes.put(note.getKey(), note.getValue().getAsString());
             }
         }
-        var manifest = new ReleaseManifest(1, "v" + version, version, "stable", Instant.now().toString(),
-            ReleaseManifest.REPOSITORY, "v" + version, "https://github.com/" + ReleaseManifest.REPOSITORY
-                + "/releases/tag/v" + version, args[2], entries, notes);
+        var manifest = new ReleaseManifest(1, revision.tag(), version, "stable", Instant.now().toString(),
+            ReleaseManifest.REPOSITORY, revision.tag(), "https://github.com/" + ReleaseManifest.REPOSITORY
+                + "/releases/tag/" + revision.tag(), args[2], entries, notes);
         ManifestVerifier.validate(manifest);
         byte[] raw = (gson.toJson(manifest) + "\n").getBytes(StandardCharsets.UTF_8);
         byte[] encodedKey = Base64.getDecoder().decode(Files.readString(Path.of(args[3])).strip());
@@ -91,7 +93,8 @@ public final class ReleaseTool {
         Files.writeString(output.resolve("release-manifest.sig"), gson.toJson(signatureFile) + "\n",
             StandardOpenOption.CREATE_NEW);
         for (var artifact : entries) {
-            Files.copy(artifacts.resolve(artifact.file()), output.resolve(artifact.file()));
+            String sourceFile = new ReleaseRevision(version, 1).file(artifact.module(), artifact.minecraft());
+            Files.copy(artifacts.resolve(sourceFile), output.resolve(artifact.file()));
         }
         System.out.println("Prepared " + entries.size() + " verified release artifacts in " + output.toAbsolutePath());
     }

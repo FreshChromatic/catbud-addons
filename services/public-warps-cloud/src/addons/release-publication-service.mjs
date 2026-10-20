@@ -22,7 +22,10 @@ export class ReleasePublicationService {
     const envelope = JSON.stringify(release.envelope);
     const snapshot = JSON.stringify(release.snapshot);
     if (existing && (existing.envelope !== envelope || existing.source_snapshot !== snapshot)) {
-      throw new ApiError(409, 'Published release content changed; publish a new version instead');
+      throw new ApiError(
+        409,
+        'Published release content changed; publish a new version or revision instead',
+      );
     }
     const now = this.repository.now;
     return this.repository.mutate(

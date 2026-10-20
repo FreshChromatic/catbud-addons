@@ -39,7 +39,8 @@ tasks.register('releaseManifest', JavaExec) {
         (project.findProperty('releaseSigningKey') ?: ''), (project.findProperty('releaseKeyId') ?: ''),
         (project.findProperty('releaseArtifactDirectory') ?: 'out'), (project.findProperty('releaseOutputDirectory') ?: ''),
         (project.findProperty('releaseNotesFile') ?: ''), (project.findProperty('releaseKeysFile') ?: 'release/keys.json'),
-        (project.findProperty('releaseModulesFile') ?: 'release/modules.json')
+        (project.findProperty('releaseModulesFile') ?: 'release/modules.json'),
+        (project.findProperty('releaseRevision') ?: '1')
 }
 tasks.register('releaseKeys', JavaExec) {
     dependsOn classes

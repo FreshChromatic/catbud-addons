@@ -10,7 +10,11 @@ import { NoticeService } from '../src/addons/notice-service.mjs';
 import { PublicCache } from '../src/public-cache.mjs';
 import { WarpApplication } from '../src/worker.mjs';
 import { AddonMaintenance } from '../src/addons/addon-maintenance.mjs';
-import { verifyManifest, validateManifest } from '../src/addons/release-manifest.mjs';
+import {
+  parseReleaseTag,
+  verifyManifest,
+  validateManifest,
+} from '../src/addons/release-manifest.mjs';
 import { AddonManagementApplication } from '../src/addons/addon-management-application.mjs';
 
 async function fixture(context) {
@@ -35,6 +39,99 @@ async function fixture(context) {
     publicApi: new AddonPublicApplication(database, now),
   };
 }
+
+test('same-version revisions can be independently imported, promoted, withdrawn and deleted', async (context) => {
+  const { database, repository, publicApi } = await fixture(context);
+  const releases = [signedRelease(), signedRelease(undefined, true, 2)];
+  const keys = {};
+  for (const [index, release] of releases.entries()) {
+    release.envelope.keyId = 'test-' + index;
+    keys['test-' + index] = release.keys.test;
+  }
+  const env = { DB: database, ADDON_RELEASE_KEYS: JSON.stringify(keys) };
+  const fetcher = (url) =>
+    releases
+      .find(
+        (release) =>
+          url.includes(release.manifest.tag + '/') || url.endsWith('/' + release.manifest.tag),
+      )
+      .fetcher(url);
+  const management = new AddonManagementApplication(env, now, fetcher);
+  const command = async (path, value = {}) => {
+    const revision = (await repository.state()).revision;
+    return management.handle(
+      new Request('https://admin.test/api/addons/' + path, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          requestId: crypto.randomUUID(),
+          expectedRevision: revision,
+          ...value,
+        }),
+      }),
+      { actor: 'admin@test' },
+    );
+  };
+  const catalog = (headers = {}) =>
+    publicApi.handle(new Request('https://api.test/addons/v1/catalog?minecraft=26.2', { headers }));
+  await command('releases/import', { tag });
+  await command(`releases/${tag}/promote`);
+  const first = await catalog();
+  const etag = first.headers.get('ETag');
+  const revisedTag = releases[1].manifest.tag;
+  await command('releases/import', { tag: revisedTag });
+  assert.equal((await catalog()).headers.get('X-Catbud-Release-Id'), tag);
+  await command(`releases/${revisedTag}/promote`);
+  const revised = await catalog({ 'If-None-Match': etag });
+  assert.equal(revised.status, 200);
+  assert.equal(revised.headers.get('X-Catbud-Release-Id'), revisedTag);
+  const manifest = await verifyManifest((await revised.json()).envelope, {
+    'test-1': releases[1].keys.test,
+  });
+  assert.equal(manifest.version, '1.0.4');
+  assert.equal(manifest.tag, 'v1.0.4-r2');
+  assert.ok(manifest.artifacts.every((artifact) => artifact.file.endsWith('-1.0.4-r2.jar')));
+  assert.equal(await database.prepare('SELECT COUNT(*) AS n FROM addon_releases').first('n'), 2);
+  await command(`releases/${revisedTag}/withdraw`);
+  assert.equal((await (await catalog()).json()).state, 'no_compatible_release');
+  await command(`releases/${revisedTag}/delete`);
+  assert.equal(await database.prepare('SELECT COUNT(*) AS n FROM addon_releases').first('n'), 1);
+});
+
+test('revision tags and signed artifact paths must agree and remain immutable', async (context) => {
+  const { repository } = await fixture(context);
+  for (const invalid of [
+    'v1.0.4-r0',
+    'v1.0.4-r1',
+    'v1.0.4-r02',
+    'v1.0.4-r2147483648',
+    'v1.0.4-r2/extra',
+  ]) {
+    assert.throws(() => parseReleaseTag(invalid));
+  }
+  const release = signedRelease(undefined, true, 2);
+  const malformed = structuredClone(release.manifest);
+  malformed.artifacts[0].file = 'catbud-core-26.2-1.0.4.jar';
+  assert.throws(() => validateManifest(malformed), /Invalid release artifact/);
+  const service = new ReleasePublicationService(
+    repository,
+    { ADDON_RELEASE_KEYS: JSON.stringify(release.keys) },
+    release.fetcher,
+  );
+  await service.import(
+    { requestId: crypto.randomUUID(), expectedRevision: 0, tag: release.manifest.tag },
+    'admin@test',
+  );
+  release.assets[0].id += 100;
+  await assert.rejects(
+    service.import(
+      { requestId: crypto.randomUUID(), expectedRevision: 1, tag: release.manifest.tag },
+      'admin@test',
+    ),
+    { status: 409 },
+  );
+  assert.equal((await repository.state()).revision, 1);
+});
 
 test('deleting an unavailable release removes its listing, preserves audit and safely replays after reimport', async (context) => {
   const { repository, database } = await fixture(context);

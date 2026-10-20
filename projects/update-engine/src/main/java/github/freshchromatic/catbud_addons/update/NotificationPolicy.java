@@ -23,9 +23,10 @@ public final class NotificationPolicy {
         if (snapshot.plan() != null && snapshot.check() == UpdateCoordinator.CheckState.AVAILABLE) {
             for (var item : snapshot.plan().replacements()) {
                 var artifact = item.artifact();
-                String id = "update:" + artifact.module() + ":" + artifact.version();
-                if (!state.skipped(artifact.module(), artifact.version()) && state.shouldRemind(id, now)) {
-                    updates.add(new UpdateReminder(artifact.module(), artifact.version(), id));
+                String id = artifact.reminderId();
+                if (!state.skipped(artifact.module(), artifact.releaseRevision().key()) && state.shouldRemind(id,
+                    now)) {
+                    updates.add(new UpdateReminder(artifact.module(), artifact.releaseRevision().displayVersion(), id));
                 }
             }
         }

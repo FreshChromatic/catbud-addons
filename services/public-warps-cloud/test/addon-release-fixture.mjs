@@ -6,13 +6,15 @@ const version = '1.0.4';
 export const tag = 'v' + version;
 const root = 'https://github.com/FreshChromatic/catbud-addons/releases/';
 
-export function signedRelease(modules = Object.keys(MODULES), embeddedCore = true) {
+export function signedRelease(modules = Object.keys(MODULES), embeddedCore = true, revision = 1) {
+  const suffix = revision === 1 ? '' : '-r' + revision;
+  const tag = 'v' + version + suffix;
   const pair = generateKeyPairSync('ed25519');
   const keys = { test: pair.publicKey.export({ type: 'spki', format: 'der' }).toString('base64') };
   const artifacts = Object.entries(MODULES)
     .filter(([module]) => modules.includes(module))
     .map(([module, modId]) => {
-      const file = `catbud-${module}-26.2-${version}.jar`;
+      const file = `catbud-${module}-26.2-${version}${suffix}.jar`;
       const requires = {
         fabricloader: '>=0.19.5',
         minecraft: '~26.2',

@@ -41,12 +41,15 @@ public final class UpdatePlanner {
                 futureMods.add(provided.modId());
             }
             if (comparison == 0) {
-                if (!jar.metadata().provides().equals(artifact.provides()) || !jar.metadata().requires().equals(artifact
-                    .requires())) {
-                    throw new IllegalArgumentException(
-                        "Installed addon metadata differs from the same release version");
+                if (jar.sha256().equals(artifact.sha256())) {
+                    continue;
                 }
-                continue;
+                var installed = ReleaseRevision.installed(jar.metadata().version(), artifact.module(), minecraft, jar
+                    .path().getFileName().toString());
+                if (artifact.releaseRevision().revision() <= installed.revision()) {
+                    throw new IllegalArgumentException(
+                        "A newer release revision is required for changed addon content");
+                }
             }
             var target = inventory.mods().resolve(artifact.file());
             if (!jar.path().getParent().equals(inventory.mods()) || Files.exists(target)) {

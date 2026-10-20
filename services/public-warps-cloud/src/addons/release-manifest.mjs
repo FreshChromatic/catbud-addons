@@ -10,6 +10,20 @@ export const MODULES = {
 };
 const VERSION = /^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$/;
 
+export function parseReleaseTag(tag) {
+  const match =
+    /^v((?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*))(?:-r([1-9][0-9]*))?$/.exec(
+      tag ?? '',
+    );
+  const revision = match?.[2] === undefined ? 1 : Number(match[2]);
+  if (!match || (match[2] !== undefined && revision < 2) || revision > 2147483647) {
+    throw new Error(
+      'A stable vMAJOR.MINOR.PATCH tag with an optional -r2 or later revision is required',
+    );
+  }
+  return { version: match[1], revision };
+}
+
 export async function verifyManifest(envelope, keys) {
   try {
     if (
@@ -51,12 +65,13 @@ export async function verifyManifest(envelope, keys) {
 
 export function validateManifest(value) {
   const root = `https://github.com/${REPOSITORY}/releases/`;
+  const release = parseReleaseTag(value.tag);
   if (
     value.schemaVersion !== 1 ||
     value.repository !== REPOSITORY ||
     !VERSION.test(value.version) ||
     value.channel !== 'stable' ||
-    value.tag !== 'v' + value.version ||
+    release.version !== value.version ||
     value.releaseId !== value.tag ||
     value.releasePage !== root + 'tag/' + value.tag ||
     !/^[0-9a-f]{40}$/.test(value.commit) ||
@@ -69,7 +84,8 @@ export function validateManifest(value) {
   }
   const seen = new Set();
   for (const artifact of value.artifacts) {
-    const file = `catbud-${artifact.module}-${artifact.minecraft}-${value.version}.jar`;
+    const suffix = release.revision === 1 ? '' : '-r' + release.revision;
+    const file = `catbud-${artifact.module}-${artifact.minecraft}-${value.version}${suffix}.jar`;
     const java = artifact.minecraft === '1.21.11' ? 21 : 25;
     if (
       !Object.hasOwn(MODULES, artifact.module) ||

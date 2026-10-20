@@ -50,11 +50,11 @@ public final class ManifestVerifier {
     public static void validate(ReleaseManifest manifest) {
         if (manifest == null || manifest.schemaVersion() != 1 || !ReleaseManifest.REPOSITORY.equals(manifest
             .repository()) || !"stable".equals(manifest.channel()) || !ReleaseVersion.parse(manifest.version()).stable()
-            || !manifest.version().matches("[0-9]+\\.[0-9]+\\.[0-9]+") || !("v" + manifest.version()).equals(manifest
-                .tag()) || !manifest.tag().equals(manifest.releaseId()) || !manifest.commit().matches("[0-9a-f]{40}")) {
+            || !manifest.tag().equals(manifest.releaseId()) || !manifest.commit().matches("[0-9a-f]{40}")) {
             throw new IllegalArgumentException("Unsupported release manifest");
         }
         Instant.parse(manifest.publishedAt());
+        ReleaseRevision revision = ReleaseRevision.parse(manifest.version(), manifest.tag());
         String releaseRoot = "https://github.com/" + ReleaseManifest.REPOSITORY + "/releases/";
         if (!(releaseRoot + "tag/" + manifest.tag()).equals(manifest.releasePage()) || manifest.artifacts().isEmpty()
             || manifest.artifacts().size() > 16) {
@@ -63,7 +63,7 @@ public final class ManifestVerifier {
         var combinations = new HashSet<String>();
         for (var artifact : manifest.artifacts()) {
             AddonModule module = AddonModule.require(artifact.module());
-            String file = "catbud-" + module.id() + "-" + artifact.minecraft() + "-" + artifact.version() + ".jar";
+            String file = revision.file(module.id(), artifact.minecraft());
             if (!module.modId().equals(artifact.modId()) || !ReleaseManifest.MINECRAFT_VERSIONS.contains(artifact
                 .minecraft()) || !manifest.version().equals(artifact.version()) || !file.equals(artifact.file())
                 || !(module.id() + ":" + artifact.minecraft()).equals(artifact.id()) || !combinations.add(artifact.id())

@@ -11,8 +11,8 @@ public record InstallationPlan(String batchId, String releaseId, String minecraf
 
     public InstallationPlan {
         UUID.fromString(batchId);
-        if (!releaseId.matches("v[0-9]+\\.[0-9]+\\.[0-9]+") || !List.of("1.21.11", "26.1.2", "26.2", "26.3").contains(
-            minecraft)) {
+        if (!releaseId.matches("v[0-9]+\\.[0-9]+\\.[0-9]+(?:-r(?:[2-9]|[1-9][0-9]+))?") || !List.of("1.21.11", "26.1.2",
+            "26.2", "26.3").contains(minecraft)) {
             throw new IllegalArgumentException("Invalid installation release");
         }
         mods = mods.toAbsolutePath().normalize();

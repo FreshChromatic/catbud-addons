@@ -76,6 +76,7 @@ class WindowsInstallationTest {
         } finally {
             if (locker[0] != null) {
                 locker[0].destroyForcibly();
+                assertTrue(locker[0].waitFor(10, TimeUnit.SECONDS), "Windows lock process did not exit");
             }
         }
     }
