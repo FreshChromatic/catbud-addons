@@ -44,8 +44,7 @@ class DungeonPathfinderTest {
             }
         };
         assertTrue(DungeonPathfinder.find(grid, START, Set.of(portal), 100).isEmpty());
-        assertEquals(deadEnd, DungeonPathfinder.findClosestApproach(grid, START, Set.of(portal), 100).blocks()
-            .getLast());
+        assertNull(DungeonPathfinder.findLoadingApproach(grid, START, Set.of(portal), 100));
         var frontier = DungeonPathfinder.findFrontier(grid, START, portal, Set.of(), 100);
         assertEquals(exit, frontier.wall());
         assertTrue(frontier.blocks().stream().allMatch(walkable::contains));
@@ -268,7 +267,7 @@ class DungeonPathfinderTest {
     }
 
     @Test
-    void followsKnownCorridorTowardPortalBeforeExploringBedrock() {
+    void followsKnownCorridorToALoadingBoundary() {
         BlockPos portal = new BlockPos(8, 0, 0);
         Set<BlockPos> corridor = Set.of(START, new BlockPos(0, 0, 1), new BlockPos(1, 0, 1), new BlockPos(2, 0, 1),
             new BlockPos(3, 0, 1), new BlockPos(4, 0, 1), new BlockPos(5, 0, 1));
@@ -285,22 +284,55 @@ class DungeonPathfinderTest {
             public List<BlockPos> frontierWalls(BlockPos pos, BlockPos target) {
                 return pos.equals(START) ? List.of(new BlockPos(-1, 0, 0)) : List.of();
             }
+
+            public boolean loaded(BlockPos pos) {
+                return pos.getX() < 6;
+            }
         };
         assertTrue(DungeonPathfinder.find(grid, START, Set.of(portal), 100).isEmpty());
         assertEquals(new BlockPos(-1, 0, 0), DungeonPathfinder.findFrontier(grid, START, portal, Set.of(), 100).wall());
-        DungeonPathfinder.ApproachRoute approach = DungeonPathfinder.findClosestApproach(grid, START, Set.of(portal),
+        DungeonPathfinder.ApproachRoute approach = DungeonPathfinder.findLoadingApproach(grid, START, Set.of(portal),
             100);
         assertEquals(new BlockPos(5, 0, 1), approach.blocks().getLast());
         assertTrue(approach.distance() < 24);
+        assertEquals(List.of(new BlockPos(5, 0, 1)), DungeonPathfinder.findLoadingApproach(grid, new BlockPos(5, 0, 1),
+            Set.of(portal), 100).blocks());
     }
 
     @Test
-    void canReachAFrontierBeyondFortyEightWalkingBlocks() {
-        BlockPos wall = new BlockPos(71, 0, 0);
+    void replacesLoadingApproachWithCompleteRouteWhenTerrainLoads() {
+        Set<BlockPos> walkable = new HashSet<>(Set.of(START, new BlockPos(1, 0, 0), new BlockPos(2, 0, 0)));
+        Set<BlockPos> unloaded = new HashSet<>(Set.of(new BlockPos(3, 0, 0), GOAL));
         DungeonPathfinder.Grid grid = new DungeonPathfinder.Grid() {
 
             public boolean canStand(BlockPos pos) {
-                return pos.getY() == 0 && pos.getZ() == 0 && pos.getX() >= 0 && pos.getX() <= 70;
+                return walkable.contains(pos);
+            }
+
+            public boolean canStep(BlockPos from, BlockPos to) {
+                return true;
+            }
+
+            public boolean loaded(BlockPos pos) {
+                return !unloaded.contains(pos);
+            }
+        };
+        assertTrue(DungeonPathfinder.find(grid, START, Set.of(GOAL), 100).isEmpty());
+        assertEquals(new BlockPos(2, 0, 0), DungeonPathfinder.findLoadingApproach(grid, START, Set.of(GOAL), 100)
+            .blocks().getLast());
+        walkable.addAll(unloaded);
+        unloaded.clear();
+        assertEquals(GOAL, DungeonPathfinder.find(grid, START, Set.of(GOAL), 100).getLast());
+        assertNull(DungeonPathfinder.findLoadingApproach(grid, START, Set.of(GOAL), 100));
+    }
+
+    @Test
+    void canReachAFrontierBeyondNinetySixWalkingBlocks() {
+        BlockPos wall = new BlockPos(121, 0, 0);
+        DungeonPathfinder.Grid grid = new DungeonPathfinder.Grid() {
+
+            public boolean canStand(BlockPos pos) {
+                return pos.getY() == 0 && pos.getZ() == 0 && pos.getX() >= 0 && pos.getX() <= 120;
             }
 
             public boolean canStep(BlockPos from, BlockPos to) {
@@ -308,13 +340,13 @@ class DungeonPathfinderTest {
             }
 
             public List<BlockPos> frontierWalls(BlockPos pos, BlockPos target) {
-                return pos.equals(new BlockPos(70, 0, 0)) ? List.of(wall) : List.of();
+                return pos.equals(new BlockPos(120, 0, 0)) ? List.of(wall) : List.of();
             }
         };
-        DungeonPathfinder.FrontierRoute route = DungeonPathfinder.findFrontier(grid, START, new BlockPos(80, 0, 0), Set
+        DungeonPathfinder.FrontierRoute route = DungeonPathfinder.findFrontier(grid, START, new BlockPos(140, 0, 0), Set
             .of(), 500);
         assertEquals(wall, route.wall());
-        assertEquals(new BlockPos(70, 0, 0), route.blocks().getLast());
+        assertEquals(new BlockPos(120, 0, 0), route.blocks().getLast());
     }
 
     @Test

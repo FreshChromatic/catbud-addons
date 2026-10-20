@@ -21,6 +21,10 @@ final class DungeonPathfinder {
 
         boolean canStep(BlockPos from, BlockPos to);
 
+        default boolean loaded(BlockPos pos) {
+            return true;
+        }
+
         default List<BlockPos> frontierWalls(BlockPos pos) {
             return List.of();
         }
@@ -147,8 +151,7 @@ final class DungeonPathfinder {
         }
     }
 
-    private static final int[][] DIRECTIONS          = { { 1, 0 }, { -1, 0 }, { 0, 1 }, { 0, -1 } };
-    private static final int     FRONTIER_WALK_LIMIT = 96;
+    private static final int[][] DIRECTIONS = { { 1, 0 }, { -1, 0 }, { 0, 1 }, { 0, -1 } };
 
     private DungeonPathfinder() {
     }
@@ -194,7 +197,7 @@ final class DungeonPathfinder {
         return findFrontier(grid, start, target, excludedWalls, Map.of(), maxVisited);
     }
 
-    static ApproachRoute findClosestApproach(Grid grid, BlockPos start, Set<BlockPos> targets, int maxVisited) {
+    static ApproachRoute findLoadingApproach(Grid grid, BlockPos start, Set<BlockPos> targets, int maxVisited) {
         if (targets.isEmpty() || !grid.canStand(start)) {
             return null;
         }
@@ -217,7 +220,9 @@ final class DungeonPathfinder {
             }
             double distance = heuristic(current.pos(), targets);
             double score = distance + 0.25 * current.cost();
-            if (score < bestScore - 0.001 || (Math.abs(score - bestScore) < 0.001 && current.cost() < bestCost)) {
+            boolean loadingBoundary = loadingBoundary(grid, current.pos(), targets);
+            if (loadingBoundary && (score < bestScore - 0.001 || (Math.abs(score - bestScore) < 0.001 && current
+                .cost() < bestCost))) {
                 best = current.pos();
                 bestDistance = distance;
                 bestCost = current.cost();
@@ -239,7 +244,19 @@ final class DungeonPathfinder {
                 }
             }
         }
-        return best.equals(start) ? null : new ApproachRoute(reconstruct(best, parents), bestDistance);
+        return best.equals(start) && !loadingBoundary(grid, start, targets) ? null
+            : new ApproachRoute(reconstruct(best, parents), bestDistance);
+    }
+
+    private static boolean loadingBoundary(Grid grid, BlockPos pos, Set<BlockPos> targets) {
+        double distance = heuristic(pos, targets);
+        for (int[] direction : DIRECTIONS) {
+            BlockPos next = pos.offset(direction[0], 0, direction[1]);
+            if (!grid.loaded(next) && heuristic(next, targets) < distance) {
+                return true;
+            }
+        }
+        return false;
     }
 
     static FrontierRoute findFrontier(Grid grid, BlockPos start, BlockPos target, Set<BlockPos> excludedWalls, Map<BlockPos, Integer> failedVisits, int maxVisited) {
@@ -275,9 +292,6 @@ final class DungeonPathfinder {
                     bestWall = wall;
                     bestPriority = 1.0 / (1.0 + score / 32.0);
                 }
-            }
-            if (current.cost() >= FRONTIER_WALK_LIMIT) {
-                continue;
             }
             for (int[] direction : DIRECTIONS) {
                 for (int dy : new int[] { 0, 1, -1 }) {

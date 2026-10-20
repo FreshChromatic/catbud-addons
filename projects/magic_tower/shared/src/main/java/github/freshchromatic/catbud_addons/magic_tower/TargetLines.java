@@ -138,7 +138,8 @@ final class TargetLines {
             return result;
         }
 
-        private boolean loaded(BlockPos pos) {
+        @Override
+        public boolean loaded(BlockPos pos) {
             return LoadedTerrainMap.loaded(level, pos);
         }
     }
@@ -342,8 +343,9 @@ final class TargetLines {
     static void onChunkChanged(ClientLevel level, int chunkX, int chunkZ) {
         TERRAIN.onChunkChanged(level, chunkX, chunkZ);
         for (Map.Entry<BlockPos, Route> entry : ROUTES.entrySet()) {
-            if (entry.getValue().blocks().stream().anyMatch(pos -> pos.getX() >> 4 == chunkX && pos
-                .getZ() >> 4 == chunkZ)) {
+            if (entry.getValue().blocks().isEmpty() || entry.getValue().approaching() || entry.getKey()
+                .getX() >> 4 == chunkX && entry.getKey().getZ() >> 4 == chunkZ || entry.getValue().blocks().stream()
+                    .anyMatch(pos -> pos.getX() >> 4 == chunkX && pos.getZ() >> 4 == chunkZ)) {
                 DIRTY_FRONTIERS.putIfAbsent(entry.getKey(), tickCount);
             }
         }
@@ -628,17 +630,15 @@ final class TargetLines {
             return;
         }
         reportedNoStart = false;
-        LevelGrid portalGrid = new LevelGrid(client.level, true);
+        LevelGrid routeGrid = new LevelGrid(client.level, true);
         for (BlockPos target : selected) {
-            boolean portal = session.targets().portalTypeAt(target) != null;
-            LevelGrid routeGrid = portal ? portalGrid : grid;
             Route route = ROUTES.get(target);
             Long dirtySince = DIRTY_FRONTIERS.get(target);
             if (dirtySince != null && tickCount - dirtySince >= 5) {
                 DIRTY_FRONTIERS.remove(target);
                 int progress = route == null ? -1 : advance(start, route);
-                if (progress < 0 || !pathClearToEnd(routeGrid, route.blocks(), progress) || route.exploring()
-                    && !client.level.getBlockState(route.frontierWall()).is(Blocks.BEDROCK)) {
+                if (progress < 0 || route.approaching() || !pathClearToEnd(routeGrid, route.blocks(), progress) || route
+                    .exploring() && !client.level.getBlockState(route.frontierWall()).is(Blocks.BEDROCK)) {
                     ROUTES.remove(target);
                     route = null;
                 }
@@ -674,7 +674,7 @@ final class TargetLines {
                 }
                 route = null;
             }
-            if (route != null && portal && route.exploring() && tickCount - route.calculatedAt() >= 40) {
+            if (route != null && route.exploring() && tickCount - route.calculatedAt() >= 40) {
                 route = null;
             }
             if (route != null && (route.exploring() || route.approaching() || tickCount - route
@@ -683,8 +683,7 @@ final class TargetLines {
                     continue;
                 }
                 int progress = advance(start, route);
-                if (progress >= 0 && (portal ? pathClearToEnd(routeGrid, route.blocks(), progress)
-                    : pathClear(routeGrid, route.blocks(), progress))) {
+                if (progress >= 0 && pathClearToEnd(routeGrid, route.blocks(), progress)) {
                     ROUTES.put(target, new Route(route.blocks(), route.calculatedAt(), progress, route.frontierWall(),
                         route.waitingSince(), route.priority(), route.approaching()));
                     continue;
@@ -708,29 +707,15 @@ final class TargetLines {
             } else {
                 Set<BlockPos> portalBlocks = session.targets().portalTypeAt(target) == null ? Set.of(target)
                     : session.targets().portalBlocksFor(target);
-                // Being nearer to a portal is not evidence that a dead end will open.
-                // Portal fallbacks must lead to a ranked, reachable terrain frontier.
-                DungeonPathfinder.ApproachRoute approach = portal ? null
-                    : DungeonPathfinder.findClosestApproach(routeGrid, start, portalBlocks, MAX_VISITED);
-                if (approach != null) {
-                    ROUTES.put(target, new Route(approach.blocks(), tickCount, 0, null, -1, 0, true));
-                    REPORTED_ROUTE_FAILURES.remove(target);
-                    LAST_FRONTIERS.remove(target);
-                    if (REPORTED_APPROACHES.add(target)) {
-                        message(client, "message.catbud_addons.approaching", name(session.targets(), target));
-                    }
-                    lastSearchTick = tickCount;
-                    break;
-                }
-                REPORTED_APPROACHES.remove(target);
                 DungeonPathfinder.FrontierRoute frontier = DungeonPathfinder.findFrontier(routeGrid, start, target,
                     FRONTIER_RETRY_AFTER.getOrDefault(target, Map.of()).keySet(), FRONTIER_FAILED_VISITS.getOrDefault(
                         target, Map.of()), FRONTIER_MAX_VISITED);
-                if (!portal && frontier == null && !FRONTIER_RETRY_AFTER.getOrDefault(target, Map.of()).isEmpty()) {
-                    frontier = DungeonPathfinder.findFrontier(grid, start, target, Set.of(), FRONTIER_FAILED_VISITS
+                if (frontier == null && !FRONTIER_RETRY_AFTER.getOrDefault(target, Map.of()).isEmpty()) {
+                    frontier = DungeonPathfinder.findFrontier(routeGrid, start, target, Set.of(), FRONTIER_FAILED_VISITS
                         .getOrDefault(target, Map.of()), FRONTIER_MAX_VISITED);
                 }
                 if (frontier != null) {
+                    REPORTED_APPROACHES.remove(target);
                     ROUTES.put(target, new Route(frontier.blocks(), tickCount, 0, frontier.wall(), -1, frontier
                         .priority()));
                     REPORTED_ROUTE_FAILURES.remove(target);
@@ -741,6 +726,19 @@ final class TargetLines {
                                 java.util.Locale.ROOT, "%.2f", frontier.priority()));
                     }
                 } else {
+                    DungeonPathfinder.ApproachRoute approach = DungeonPathfinder.findLoadingApproach(routeGrid, start,
+                        portalBlocks, MAX_VISITED);
+                    if (approach != null) {
+                        ROUTES.put(target, new Route(approach.blocks(), tickCount, 0, null, -1, 0, true));
+                        REPORTED_ROUTE_FAILURES.remove(target);
+                        LAST_FRONTIERS.remove(target);
+                        if (REPORTED_APPROACHES.add(target)) {
+                            message(client, "message.catbud_addons.approaching", name(session.targets(), target));
+                        }
+                        lastSearchTick = tickCount;
+                        break;
+                    }
+                    REPORTED_APPROACHES.remove(target);
                     ROUTES.put(target, new Route(List.of(), tickCount, 0, null, -1, 0));
                     if (REPORTED_ROUTE_FAILURES.add(target)) {
                         CatbudAddonsClient.LOGGER.debug("路線搜尋失敗：起點 " + start.toShortString() + "，目標 " + target
@@ -806,16 +804,6 @@ final class TargetLines {
         return nearest;
     }
 
-    private static boolean pathClear(LevelGrid grid, List<BlockPos> route, int progress) {
-        int end = Math.min(route.size() - 1, progress + 4);
-        for (int i = progress + 1; i <= end; i++) {
-            if (!grid.canStand(route.get(i)) || !grid.canStep(route.get(i - 1), route.get(i))) {
-                return false;
-            }
-        }
-        return true;
-    }
-
     private static boolean pathClearToEnd(LevelGrid grid, List<BlockPos> route, int progress) {
         for (int i = progress + 1; i < route.size(); i++) {
             if (!grid.canStand(route.get(i)) || !grid.canStep(route.get(i - 1), route.get(i))) {
@@ -843,8 +831,8 @@ final class TargetLines {
             if (!selected.contains(entry.getKey())) {
                 continue;
             }
-            drawRoute(context, camera, player, entry.getValue(), entry.getKey(), MagicTowerSettings.routeColor(session
-                .targets(), entry.getKey()), session.targets().portalTypeAt(entry.getKey()) != null);
+            drawRoute(context, camera, player, entry.getValue(), MagicTowerSettings.routeColor(session.targets(), entry
+                .getKey()));
         }
         if (manualExploration) {
             for (Route route : manualRoutes) {
@@ -852,13 +840,13 @@ final class TargetLines {
                     continue;
                 }
                 Vec3 routeStart = Vec3.atBottomCenterOf(route.blocks().getFirst()).add(0, 0.2, 0);
-                drawRoute(context, camera, routeStart, route, null, MagicTowerSettings.values().color(
-                    "routes.color.explore", "routes.opacity"), false);
+                drawRoute(context, camera, routeStart, route, MagicTowerSettings.values().color("routes.color.explore",
+                    "routes.opacity"));
             }
         }
     }
 
-    private static void drawRoute(RouteRenderContext context, Vec3 camera, Vec3 player, Route path, BlockPos target, int color, boolean portal) {
+    private static void drawRoute(RouteRenderContext context, Vec3 camera, Vec3 player, Route path, int color) {
         List<BlockPos> route = path.blocks();
         if (route.isEmpty()) {
             return;
@@ -868,13 +856,9 @@ final class TargetLines {
         for (int i = Math.min(path.progress() + 1, route.size()); i < route.size(); i++) {
             points.add(Vec3.atBottomCenterOf(route.get(i)).add(0, 0.2, 0));
         }
-        if (path.exploring() || path.approaching() || target == null) {
-            points.add(Vec3.atBottomCenterOf(route.getLast()).add(0, 0.85, 0));
-        } else {
-            points.add(Vec3.atCenterOf(target));
-        }
+        points.add(Vec3.atBottomCenterOf(route.getLast()).add(0, 0.85, 0));
         float width = (float) MagicTowerSettings.values().number("routes.width");
-        if (portal && path.exploring() && MagicTowerSettings.values().bool("routes.evaluationSweep")) {
+        if ((path.exploring() || path.approaching()) && MagicTowerSettings.values().bool("routes.evaluationSweep")) {
             double phase = Math.floorMod(System.nanoTime(), 2_000_000_000L) / 2_000_000_000.0;
             for (RouteSweep.Span span : RouteSweep.spans(points, phase)) {
                 context.draw(List.of(span.from(), span.to()), span.highlighted() ? (color & 0xFF000000) | 0xFFFFFF
