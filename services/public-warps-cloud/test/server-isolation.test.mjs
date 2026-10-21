@@ -84,6 +84,10 @@ test('legacy migration, server qualifications, scoped access and publication rem
       await readFile(new URL('../migrations/0007_owner_editing.sql', import.meta.url), 'utf8')
     ).replaceAll('\n', ' '),
   );
+  await database.exec(
+    (await readFile(new URL('../migrations/0009_maintenance_reads.sql', import.meta.url), 'utf8'))
+      .replaceAll('\n', ' '),
+  );
   const request = new Request('https://warps.test', {
     headers: { Authorization: 'Bearer ' + credential },
   });

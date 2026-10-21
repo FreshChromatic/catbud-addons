@@ -10,6 +10,7 @@ import java.util.*;
 public final class WarpStore {
 
     public String                         serverId, contributorHash;
+    public OfficialWarpDirectory          officialDirectory;
     public Map<String, SubmissionReceipt> submissions = new HashMap<>();
 
     public record SubmissionReceipt(String state, String id, long at, long nextCheck, String reason) {
@@ -89,6 +90,9 @@ public final class WarpStore {
         }
         warp.uuid = uuid;
         mergeNameVisits(warp.name, uuid);
+        if (officialDirectory != null) {
+            officialDirectory.applyIdentity(warp);
+        }
         String preview = previews.remove(previousKey);
         String version = previewVersions.remove(previousKey);
         if (preview != null) {
@@ -116,29 +120,63 @@ public final class WarpStore {
         return rejectedNames.contains(name.toLowerCase(Locale.ROOT));
     }
 
+    public void mergeOfficial(Map<String, String> players, long now) {
+        officialDirectory = new OfficialWarpDirectory(players, now);
+        for (var player : players.entrySet()) {
+            WarpData warp = warps.stream().filter(value -> player.getKey().equals(value.uuid)).findFirst().orElse(null);
+            if (warp == null) {
+                warp = warps.stream().filter(value -> value.uuid == null && value.name.equalsIgnoreCase(player
+                    .getValue())).findFirst().orElse(null);
+            }
+            if (warp == null) {
+                warp = new WarpData();
+                warp.name = player.getValue();
+                warps.add(warp);
+            }
+            resolveIdentity(warp, player.getKey());
+            rejectedNames.remove(player.getValue().toLowerCase(Locale.ROOT));
+            warp.passState = "active";
+            warp.availability = "available";
+            warp.checkedAt = now;
+        }
+        warps.forEach(officialDirectory::applyIdentity);
+        discoveries.clear();
+    }
+
     public WarpData remember(String name) {
         rejectedNames.remove(name.toLowerCase(Locale.ROOT));
-        for (var warp : warps) {
-            if (warp.name.equalsIgnoreCase(name)) {
-                warp.locallyDiscovered = true;
-                return warp;
+        var known = findByName(name);
+        if (known != null) {
+            known.locallyDiscovered = true;
+            if (officialDirectory != null) {
+                officialDirectory.applyIdentity(known);
             }
+            return known;
         }
         var warp = new WarpData();
         warp.name = name;
         warp.locallyDiscovered = true;
+        if (officialDirectory != null) {
+            officialDirectory.applyIdentity(warp);
+        }
         warps.add(warp);
         return warp;
     }
 
+    public WarpData findByName(String name) {
+        return warps.stream().filter(warp -> warp.name.equalsIgnoreCase(name)).min(Comparator.comparing(
+            warp -> !Boolean.TRUE.equals(warp.officialAvailable))).orElse(null);
+    }
+
     public void mergeShared(List<WarpData> incoming) {
         for (var shared : incoming) {
-            if (rejected(shared.name) && shared.lastSuccess == 0) {
+            if (officialDirectory == null && rejected(shared.name) && shared.lastSuccess == 0) {
                 continue;
             }
             rejectedNames.remove(shared.name.toLowerCase(Locale.ROOT));
-            WarpData local = warps.stream().filter(warp -> Objects.equals(warp.uuid, shared.uuid) || warp.name
-                .equalsIgnoreCase(shared.name)).findFirst().orElse(null);
+            WarpData local = warps.stream().filter(warp -> Objects.equals(warp.uuid, shared.uuid)
+                || ((officialDirectory == null || warp.uuid == null) && warp.name.equalsIgnoreCase(shared.name)))
+                .findFirst().orElse(null);
             if (local != null) {
                 shared.locallyDiscovered = local.locallyDiscovered;
                 shared.confirmedTeleport |= local.confirmedTeleport || local.lastSuccess > 0;
@@ -157,7 +195,14 @@ public final class WarpStore {
                     shared.passState = local.passState;
                     shared.nextCheck = local.nextCheck;
                 }
+                if (officialDirectory != null) {
+                    shared.availability = local.availability;
+                    shared.passState = local.passState;
+                }
                 warps.remove(local);
+            }
+            if (officialDirectory != null) {
+                officialDirectory.applyIdentity(shared);
             }
             warps.add(shared);
             mergeNameVisits(shared.name, shared.uuid);
@@ -179,8 +224,9 @@ public final class WarpStore {
                 if (!uuid.equals(warp.uuid)) {
                     continue;
                 }
-                boolean personalHistory = warp.locallyDiscovered || (visits.containsKey(uuid) && visits.get(
-                    uuid).count > 0) || (previews.containsKey(uuid) && !previewVersions.containsKey(uuid));
+                boolean personalHistory = officialDirectory != null || warp.locallyDiscovered || (visits.containsKey(
+                    uuid) && visits.get(uuid).count > 0) || (previews.containsKey(uuid) && !previewVersions.containsKey(
+                        uuid));
                 if (personalHistory) {
                     warp.locallyDiscovered = true;
                     warp.snapshotHash = null;
@@ -244,6 +290,16 @@ public final class WarpStore {
             if (store.submissions == null) {
                 store.submissions = new HashMap<>();
             }
+            if (store.officialDirectory != null) {
+                var directory = store.officialDirectory;
+                if (!"catbud".equals(store.serverId) || directory.players == null || directory.players.size() > 5000
+                    || directory.refreshed < 0 || directory.players.entrySet().stream().anyMatch(entry -> entry
+                        .getKey() == null || !entry.getKey().matches(
+                            "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}") || entry.getValue() == null
+                        || !entry.getValue().matches("[A-Za-z0-9_]{1,16}"))) {
+                    throw new IOException("Invalid official warp cache");
+                }
+            }
             if (store.submissions.size() > 5200) {
                 throw new IOException("Too many submission receipts");
             }
@@ -287,6 +343,9 @@ public final class WarpStore {
             store.trimPreviews();
             store.trimPendingPreviews();
             for (var warp : store.warps) {
+                if (store.officialDirectory != null) {
+                    store.officialDirectory.applyIdentity(warp);
+                }
                 var history = store.visits.get(warp.key());
                 warp.confirmedTeleport |= warp.lastSuccess > 0 || (history != null && history.count > 0);
                 if (warp.uuid == null || "candidate".equals(warp.status)) {

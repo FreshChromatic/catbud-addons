@@ -29,23 +29,27 @@ import java.util.regex.*;
 
 public final class PublicWarpsClient implements ClientModInitializer {
 
-    public static final PublicWarpsClient INSTANCE = new PublicWarpsClient();
-    private static final Gson             JSON     = new Gson();
-    private static final org.slf4j.Logger LOG      = org.slf4j.LoggerFactory.getLogger("Catbud Public Warps");
-    private final ExecutorService         io       = Executors.newFixedThreadPool(2, r -> {
-                                                       var t = new Thread(r, "Catbud Warps IO");
-                                                       t.setDaemon(true);
-                                                       return t;
-                                                   });
-    private final HttpClient              http     = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10))
+    public static final PublicWarpsClient INSTANCE    = new PublicWarpsClient();
+    private static final Gson             JSON        = new Gson();
+    private static final org.slf4j.Logger LOG         = org.slf4j.LoggerFactory.getLogger("Catbud Public Warps");
+    private final ExecutorService         io          = Executors.newFixedThreadPool(2, r -> {
+                                                          var t = new Thread(r, "Catbud Warps IO");
+                                                          t.setDaemon(true);
+                                                          return t;
+                                                      });
+    private final HttpClient              http        = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10))
         .build();
-    private final ExecutorService         cacheIO  = Executors.newSingleThreadExecutor(r -> {
-                                                       var t = new Thread(r, "Catbud Warps Cache");
-                                                       t.setDaemon(true);
-                                                       return t;
-                                                   });
-    private final WarpApiClient           api      = new WarpApiClient(http);
+    private final ExecutorService         cacheIO     = Executors.newSingleThreadExecutor(r -> {
+                                                          var t = new Thread(r, "Catbud Warps Cache");
+                                                          t.setDaemon(true);
+                                                          return t;
+                                                      });
+    private final WarpApiClient           api         = new WarpApiClient(http);
+    private final OfficialWarpApiClient   officialApi = new OfficialWarpApiClient(http);
     private WarpServerScope               serverScope;
+
+    private boolean officialBusy, officialFailed;
+    private long    nextOfficialRefresh, lastOfficialManual;
 
     private record CloudRequest(CloudWarpApiClient client, String service, String credential) {}
 
@@ -98,6 +102,9 @@ public final class PublicWarpsClient implements ClientModInitializer {
     private long          saveDue;
 
     public String notice() {
+        if (officialFailed) {
+            return Component.translatable("warps.official_offline").getString();
+        }
         if (cloudService && ("warps.ready".equals(noticeKey) || "warps.synced".equals(noticeKey))) {
             if (contributorCredential.isEmpty()) {
                 return Component.translatable("warps.download_only").getString();
@@ -231,8 +238,8 @@ public final class PublicWarpsClient implements ClientModInitializer {
         }
         UUID account = mc.getUser().getProfileId();
         return account != null && account.toString().equals(warp.uuid) && account.equals(mc.player.getUUID())
-            && store.sharedIds.contains(warp.uuid) && suggestions.stream().anyMatch(name -> name.equalsIgnoreCase(
-                warp.name));
+            && store.sharedIds.contains(warp.uuid) && (usesOfficialDirectory() ? Boolean.TRUE.equals(
+                warp.officialAvailable) : suggestions.stream().anyMatch(name -> name.equalsIgnoreCase(warp.name)));
     }
 
     public OwnerEditSession ownerEditSession(WarpData warp) {
@@ -291,6 +298,8 @@ public final class PublicWarpsClient implements ClientModInitializer {
         activePreviewLoads.clear();
         suggestions.clear();
         refreshBusy = reportBusy = false;
+        officialBusy = officialFailed = false;
+        nextOfficialRefresh = lastOfficialManual = lastManual = 0;
         discoveryBusy = availabilityBusy = false;
         reportFailures = 0;
         nextRefresh = nextRetry = nextMetadataRetry = 0;
@@ -304,6 +313,12 @@ public final class PublicWarpsClient implements ClientModInitializer {
         cache = ServerWarpCache.path(directory, mc.player.getUUID(), serverScope);
         try {
             store = ServerWarpCache.load(directory, mc.player.getUUID(), serverScope, mc.getCurrentServer().ip);
+            if (usesOfficialDirectory()) {
+                store.discoveries.clear();
+                if (store.officialDirectory != null) {
+                    nextOfficialRefresh = store.officialDirectory.refreshed + 300000;
+                }
+            }
             repairUploads();
         } catch (Exception e) {
             noticeKey = "warps.cache_failed";
@@ -315,6 +330,7 @@ public final class PublicWarpsClient implements ClientModInitializer {
                 LOG.warn("Cannot preserve failed cache; saving disabled", copyFailure);
             }
         }
+        store.serverId = serverScope.id;
     }
 
     private void tick() {
@@ -326,6 +342,7 @@ public final class PublicWarpsClient implements ClientModInitializer {
             }
         }
         long now = System.currentTimeMillis();
+        refreshOfficial(false);
         if (pendingRequest != -1 && now > suggestionDeadline) {
             pendingRequest = -1;
             noticeKey = "warps.suggestions_timeout";
@@ -621,7 +638,7 @@ public final class PublicWarpsClient implements ClientModInitializer {
     }
 
     public boolean canRetryTeleport(WarpData warp) {
-        return !warp.canTeleport();
+        return !Boolean.FALSE.equals(warp.officialAvailable) && !warp.canTeleport();
     }
 
     public void retryTeleport(WarpData warp) {
@@ -632,21 +649,33 @@ public final class PublicWarpsClient implements ClientModInitializer {
 
     private void sendTeleport(WarpData w) {
         var mc = Minecraft.getInstance();
-        if (mc.getConnection() == null || !supportedServer()) {
+        if (mc.getConnection() == null || !supportedServer() || Boolean.FALSE.equals(w.officialAvailable)) {
             return;
         }
-        mc.getConnection().sendCommand("to by " + w.name);
+        String target = w.name;
+        if (usesOfficialDirectory() && store.officialDirectory != null) {
+            target = w.uuid == null ? null : store.officialDirectory.players.get(w.uuid);
+            if (target == null) {
+                return;
+            }
+        }
+        mc.getConnection().sendCommand("to by " + target);
         ClientPlatform.show(mc, null);
     }
 
     private WarpData find(String name) {
-        return store.warps.stream().filter(w -> w.name.equalsIgnoreCase(name)).findFirst().orElse(null);
+        return store.findByName(name);
     }
 
     public List<WarpData> warps() {
         Map<String, WarpData> all = new LinkedHashMap<>();
         for (WarpData w : store.warps) {
-            all.put(w.name.toLowerCase(Locale.ROOT), w);
+            String name = w.name.toLowerCase(Locale.ROOT);
+            var previous = all.get(name);
+            if (previous == null || !Boolean.TRUE.equals(previous.officialAvailable) || Boolean.TRUE.equals(
+                w.officialAvailable)) {
+                all.put(name, w);
+            }
         }
         for (String s : suggestions) {
             if (store.rejected(s)) {
@@ -674,7 +703,7 @@ public final class PublicWarpsClient implements ClientModInitializer {
 
     public void requestSuggestions() {
         var mc = Minecraft.getInstance();
-        if (!supportedServer() || pendingRequest != -1 || mc.getConnection() == null) {
+        if (usesOfficialDirectory() || !supportedServer() || pendingRequest != -1 || mc.getConnection() == null) {
             return;
         }
         pendingRequest = ++requestId;
@@ -721,6 +750,7 @@ public final class PublicWarpsClient implements ClientModInitializer {
     }
 
     public void refresh(boolean manual) {
+        refreshOfficial(manual);
         long now = System.currentTimeMillis();
         boolean throttled = manual ? now - lastManual < 30000 : now < nextRefresh;
         if (refreshBusy || session.isEmpty() || throttled) {
@@ -737,6 +767,45 @@ public final class PublicWarpsClient implements ClientModInitializer {
         Long revision = store.sharedRevision;
         var cloud = cloudService ? cloudRequest() : null;
         io.execute(() -> fetchWarpList(generation, etag, revision, cloud));
+    }
+
+    private boolean usesOfficialDirectory() {
+        return serverScope == WarpServerScope.CATBUD;
+    }
+
+    private void refreshOfficial(boolean manual) {
+        long now = System.currentTimeMillis();
+        boolean throttled = manual ? now - lastOfficialManual < 30000 : now < nextOfficialRefresh;
+        if (!usesOfficialDirectory() || session.isEmpty() || officialBusy || throttled) {
+            return;
+        }
+        if (manual) {
+            lastOfficialManual = now;
+        }
+        nextOfficialRefresh = now + 300000;
+        officialBusy = true;
+        long generation = sessionGeneration;
+        io.execute(() -> {
+            try {
+                var players = officialApi.fetch();
+                Minecraft.getInstance().execute(() -> {
+                    if (generation != sessionGeneration) {
+                        return;
+                    }
+                    store.mergeOfficial(players, System.currentTimeMillis());
+                    officialBusy = officialFailed = false;
+                    markDirty();
+                });
+            } catch (Exception failure) {
+                LOG.debug("Official warp list unavailable", failure);
+                Minecraft.getInstance().execute(() -> {
+                    if (generation == sessionGeneration) {
+                        officialBusy = false;
+                        officialFailed = true;
+                    }
+                });
+            }
+        });
     }
 
     private void fetchWarpList(long generation, String etag, Long revision, CloudRequest cloud) {
@@ -777,19 +846,25 @@ public final class PublicWarpsClient implements ClientModInitializer {
         }
     }
 
-    private record QualificationRequest(String target, String knownUuid, BlockSnapshot preview,
+    private record QualificationRequest(String target, String knownUuid, boolean official, BlockSnapshot preview,
         TeleportAttempt operation, long generation) {}
 
     private void qualify(String target, BlockSnapshot preview, TeleportAttempt operation) {
         var info = Minecraft.getInstance().getConnection().getPlayerInfo(target);
         String knownUuid = info == null ? null : info.getProfile().id().toString();
-        var request = new QualificationRequest(target, knownUuid, preview, operation, sessionGeneration);
+        var knownWarp = find(target);
+        if (usesOfficialDirectory() && knownWarp != null && knownWarp.uuid != null) {
+            knownUuid = knownWarp.uuid;
+        }
+        boolean official = usesOfficialDirectory() && knownWarp != null && Boolean.TRUE.equals(
+            knownWarp.officialAvailable);
+        var request = new QualificationRequest(target, knownUuid, official, preview, operation, sessionGeneration);
         io.execute(() -> verifyQualification(request));
     }
 
     private void verifyQualification(QualificationRequest request) {
         try {
-            var player = cloudService ? api.resolvePlayer(request.target(), request.knownUuid())
+            var player = cloudService || request.official() ? api.resolvePlayer(request.target(), request.knownUuid())
                 : api.verifyPlayer(request.target(), request.knownUuid());
             var payload = PreviewPayload.from(request.preview(), cloudService);
             Minecraft.getInstance().execute(() -> applyQualification(request, player, payload));
@@ -1046,7 +1121,7 @@ public final class PublicWarpsClient implements ClientModInitializer {
         boolean newCredential = !credentialHash.equals(store.contributorHash);
         store.contributorHash = credentialHash;
         for (var warp : store.warps) {
-            if (newCredential && warp.locallyDiscovered) {
+            if (!usesOfficialDirectory() && newCredential && warp.locallyDiscovered) {
                 store.queueDiscovery(warp.name, System.currentTimeMillis());
             }
             if (warp.uuid == null || !warp.confirmedTeleport || store.submissions.containsKey(warp.uuid)
@@ -1094,7 +1169,7 @@ public final class PublicWarpsClient implements ClientModInitializer {
             io.execute(() -> sendAvailability(report, generation, cloud));
             return;
         }
-        if (store.discoveries.isEmpty() || now < nextDiscovery) {
+        if (usesOfficialDirectory() || store.discoveries.isEmpty() || now < nextDiscovery) {
             return;
         }
         var targets = new ArrayList<DiscoveryTarget>();

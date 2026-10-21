@@ -1,6 +1,7 @@
 {
   "key.catbud_public_warps.open": "Open public warps",
   "warps.title": "Catbud Public Warps",
+  "warps.official_offline": "Official warp list unavailable; showing last saved data",
   "warps.search": "Search player ID, custom name, description or tags...",
   "warps.refresh": "Refresh",
   "warps.frequent": "My top three",

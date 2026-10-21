@@ -11,12 +11,19 @@ public final class WarpData {
     public String       passState = "unknown", availability = "unknown";
     public long         checkedAt, nextCheck, lastSuccess, lastFailure;
     public boolean      locallyDiscovered, confirmedTeleport;
+    public Boolean      officialAvailable;
 
     public boolean canTeleport() {
+        if (officialAvailable != null) {
+            return officialAvailable && !"unavailable".equals(availability);
+        }
         return !"inactive".equals(passState) && !"unavailable".equals(availability) && !"invalid".equals(status);
     }
 
     public String warningKey() {
+        if (officialAvailable != null) {
+            return !officialAvailable || "unavailable".equals(availability) ? "warps.status.unavailable" : "";
+        }
         if ("inactive".equals(passState)) {
             return "warps.status.no_pass";
         }
@@ -27,7 +34,7 @@ public final class WarpData {
     }
 
     public boolean listed() {
-        return confirmedTeleport || lastSuccess > 0 || !"unavailable".equals(availability);
+        return officialAvailable != null || confirmedTeleport || lastSuccess > 0 || !"unavailable".equals(availability);
     }
 
     public void confirmTeleport() {
