@@ -219,7 +219,7 @@ public final class CloudWarpApiClient {
     }
 
     private void validateWarp(WarpData warp) throws IOException {
-        if (warp == null || warp.name == null || !warp.name.matches("[A-Za-z0-9_]{1,16}") || warp.tags == null) {
+        if (warp == null || warp.name == null || !warp.name.matches("\\.?[A-Za-z0-9_]{1,16}") || warp.tags == null) {
             throw new IOException("Invalid shared player");
         }
         if (scope != null && !scope.id.equals(warp.serverId)) {

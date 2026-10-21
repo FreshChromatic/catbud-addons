@@ -292,11 +292,11 @@ public final class WarpStore {
             }
             if (store.officialDirectory != null) {
                 var directory = store.officialDirectory;
-                if (!"catbud".equals(store.serverId) || directory.players == null || directory.players.size() > 5000
-                    || directory.refreshed < 0 || directory.players.entrySet().stream().anyMatch(entry -> entry
-                        .getKey() == null || !entry.getKey().matches(
+                if (!("catbud".equals(store.serverId) || "catrealm".equals(store.serverId)) || directory.players == null
+                    || directory.players.size() > 5000 || directory.refreshed < 0 || directory.players.entrySet()
+                        .stream().anyMatch(entry -> entry.getKey() == null || !entry.getKey().matches(
                             "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}") || entry.getValue() == null
-                        || !entry.getValue().matches("[A-Za-z0-9_]{1,16}"))) {
+                            || !entry.getValue().matches("\\.?[A-Za-z0-9_]{1,16}"))) {
                     throw new IOException("Invalid official warp cache");
                 }
             }
@@ -321,11 +321,11 @@ public final class WarpStore {
             store.availabilityReports = new ArrayList<>(store.availabilityReports.stream().map(report -> report
                 .submissionId() == null ? new AvailabilityReport(report.uuid(), report.name(), report.reason(), report
                     .created()) : report).toList());
-            if (store.warps.stream().anyMatch(w -> w == null || w.name == null || !w.name.matches("[A-Za-z0-9_]{1,16}")
-                || w.tags == null) || store.visits.values().stream().anyMatch(v -> v == null || v.count < 0
-                    || v.last < 0) || store.previews.values().stream().anyMatch(Objects::isNull) || store.previewReports
-                        .values().stream().anyMatch(r -> r == null || r.digest() == null) || store.pending.stream()
-                            .anyMatch(r -> r == null || r.uuid() == null || r.name() == null)) {
+            if (store.warps.stream().anyMatch(w -> w == null || w.name == null || !w.name.matches(
+                "\\.?[A-Za-z0-9_]{1,16}") || w.tags == null) || store.visits.values().stream().anyMatch(v -> v == null
+                    || v.count < 0 || v.last < 0) || store.previews.values().stream().anyMatch(Objects::isNull)
+                || store.previewReports.values().stream().anyMatch(r -> r == null || r.digest() == null)
+                || store.pending.stream().anyMatch(r -> r == null || r.uuid() == null || r.name() == null)) {
                 throw new IOException("Invalid warp cache entries");
             }
             if (store.discoveries.size() > 100 || store.sharedIds.size() > 5000 || store.sharedIds.stream().anyMatch(

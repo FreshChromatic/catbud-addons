@@ -288,10 +288,14 @@ public final class PreviewRenderer {
     }
 
     public void draw(GuiGraphics g, BlockSnapshot s, int x, int y, int w, int h, double angle, double inside, double pitch, double zoom) {
-        draw(g, s, x, y, w, h, angle, inside, pitch, zoom, 0, 0, 0);
+        draw(g, s, x, y, w, h, angle, inside, pitch, zoom, 0, 0, 0, false);
     }
 
     public void draw(GuiGraphics g, BlockSnapshot s, int x, int y, int w, int h, double angle, double inside, double pitch, double zoom, double offsetX, double offsetY, double offsetZ) {
+        draw(g, s, x, y, w, h, angle, inside, pitch, zoom, offsetX, offsetY, offsetZ, true);
+    }
+
+    private void draw(GuiGraphics g, BlockSnapshot s, int x, int y, int w, int h, double angle, double inside, double pitch, double zoom, double offsetX, double offsetY, double offsetZ, boolean interactive) {
         if (w <= 0 || h <= 0) {
             return;
         }
@@ -322,7 +326,7 @@ public final class PreviewRenderer {
         }
         g.nextStratum();
         g.guiRenderState.submitPicturesInPictureState(new WarpSceneState(mesh, s, x, y, x + w, y + h, angle, pitch,
-            zoom, inside, offsetX, offsetY, offsetZ, bounds));
+            zoom, inside, offsetX, offsetY, offsetZ, interactive, bounds));
         g.nextStratum();
     }
 }

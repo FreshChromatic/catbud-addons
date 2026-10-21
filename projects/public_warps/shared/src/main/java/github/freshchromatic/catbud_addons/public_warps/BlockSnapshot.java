@@ -123,7 +123,7 @@ public final class BlockSnapshot {
         } catch (RuntimeException invalid) {
             throw new IOException("Invalid player identity");
         }
-        if (entity.playerName() == null || !entity.playerName().matches("[A-Za-z0-9_]{1,16}")) {
+        if (entity.playerName() == null || !entity.playerName().matches("\\.?[A-Za-z0-9_]{1,16}")) {
             throw new IOException("Invalid player name");
         }
     }

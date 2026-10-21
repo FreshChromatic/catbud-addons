@@ -770,7 +770,7 @@ public final class PublicWarpsClient implements ClientModInitializer {
     }
 
     private boolean usesOfficialDirectory() {
-        return serverScope == WarpServerScope.CATBUD;
+        return serverScope != null;
     }
 
     private void refreshOfficial(boolean manual) {
@@ -785,9 +785,10 @@ public final class PublicWarpsClient implements ClientModInitializer {
         nextOfficialRefresh = now + 300000;
         officialBusy = true;
         long generation = sessionGeneration;
+        var client = officialApi.forServer(serverScope);
         io.execute(() -> {
             try {
-                var players = officialApi.fetch();
+                var players = client.fetch();
                 Minecraft.getInstance().execute(() -> {
                     if (generation != sessionGeneration) {
                         return;

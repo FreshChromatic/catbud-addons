@@ -5,7 +5,7 @@ import java.util.regex.Pattern;
 /** One operation, cancelled on ambiguous subsequent commands and disconnected sessions. */
 public final class TeleportAttempt {
 
-    private static final Pattern COMMAND = Pattern.compile("^/?to\\s+by\\s+([A-Za-z0-9_]{1,16})\\s*$");
+    private static final Pattern COMMAND = Pattern.compile("^/?to\\s+by\\s+(\\.?[A-Za-z0-9_]{1,16})\\s*$");
     public final String          target;
     public final long            started;
     private boolean              boss, action, cancelled, arrived, bossEnded;

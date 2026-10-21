@@ -34,4 +34,8 @@ public enum WarpServerScope {
     public URI playerEndpoint() {
         return URI.create("https://api." + domain + "/discord/player/");
     }
+
+    public URI publicWarpsEndpoint() {
+        return URI.create("https://api." + domain + "/publics");
+    }
 }

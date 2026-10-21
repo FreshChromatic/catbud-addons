@@ -28,6 +28,10 @@ public final class OfficialWarpApiClient {
         this.endpoint = endpoint;
     }
 
+    public OfficialWarpApiClient forServer(WarpServerScope scope) {
+        return new OfficialWarpApiClient(http, scope.publicWarpsEndpoint());
+    }
+
     public Map<String, String> fetch() throws IOException, InterruptedException {
         var request = HttpRequest.newBuilder(endpoint).timeout(Duration.ofSeconds(15)).GET().build();
         var response = http.send(request, HttpResponse.BodyHandlers.ofInputStream());
@@ -65,8 +69,8 @@ public final class OfficialWarpApiClient {
                 String uuid = uuidValue.getAsString();
                 String name = nameValue.getAsString();
                 String normalized = UUID.fromString(uuid).toString();
-                if (!normalized.equalsIgnoreCase(uuid) || !name.matches("[A-Za-z0-9_]{1,16}") || players.putIfAbsent(
-                    normalized, name) != null || !names.add(name.toLowerCase(java.util.Locale.ROOT))) {
+                if (!normalized.equalsIgnoreCase(uuid) || !name.matches("\\.?[A-Za-z0-9_]{1,16}") || players
+                    .putIfAbsent(normalized, name) != null || !names.add(name.toLowerCase(java.util.Locale.ROOT))) {
                     throw new IOException("Invalid or duplicate official warp identity");
                 }
             }

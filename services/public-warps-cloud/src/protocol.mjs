@@ -7,7 +7,7 @@ export class ApiError extends Error {
 }
 
 export const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-export const NAME = /^[A-Za-z0-9_]{1,16}$/;
+export const NAME = /^\.?[A-Za-z0-9_]{1,16}$/;
 export const HASH = /^[0-9a-f]{64}$/;
 
 export function identity(value) {

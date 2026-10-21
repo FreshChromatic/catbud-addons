@@ -6,6 +6,8 @@ import com.sun.net.httpserver.HttpServer;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -22,10 +24,12 @@ class OfficialWarpSyncTest {
 
     private static final String UUID = "a29a6851-0d71-411c-953c-b87bab0d12f3";
 
-    @Test
-    void withdrawnWarpKeepsPreviewMetadataAndVisitsAfterCloudMergeAndRestart(@TempDir Path directory) throws Exception {
+    @ParameterizedTest
+    @EnumSource(WarpServerScope.class)
+    void withdrawnWarpKeepsPreviewMetadataAndVisitsAfterCloudMergeAndRestart(WarpServerScope scope, @TempDir Path directory)
+        throws Exception {
         var store = new WarpStore();
-        store.serverId = "catbud";
+        store.serverId = scope.id;
         store.mergeOfficial(Map.of(UUID, "Steve"), 1000);
         store.previews.put(UUID, "preview");
         store.arrival(UUID, 1100);
@@ -69,6 +73,32 @@ class OfficialWarpSyncTest {
         assertEquals("Station", restored.warps.getFirst().description);
         assertEquals(1, restored.visits.get(UUID).count);
         assertTrue(restored.discoveries.isEmpty());
+    }
+
+    @Test
+    void catrealmBedrockWarpsKeepTheirOwnEndpointIdentityAndCache(@TempDir Path directory) throws Exception {
+        assertEquals(URI.create("https://api.catbud.net/publics"), WarpServerScope.CATBUD.publicWarpsEndpoint());
+        assertEquals(URI.create("https://api.catrealm.net/publics"), WarpServerScope.CATREALM.publicWarpsEndpoint());
+        String body = "{\"publics\":[{\"uuid\":\"" + UUID + "\",\"name\":\".Steve\"}]}";
+        var players = OfficialWarpApiClient.parseResponse(body.getBytes(StandardCharsets.UTF_8));
+        var account = java.util.UUID.fromString(UUID);
+        var catbud = ServerWarpCache.load(directory, account, WarpServerScope.CATBUD, "catbud.net");
+        var catrealm = ServerWarpCache.load(directory, account, WarpServerScope.CATREALM, "catrealm.net");
+        catbud.mergeOfficial(Map.of(UUID, "Steve"), 1000);
+        catrealm.mergeOfficial(players, 2000);
+        catbud.save(ServerWarpCache.path(directory, account, WarpServerScope.CATBUD));
+        catrealm.save(ServerWarpCache.path(directory, account, WarpServerScope.CATREALM));
+        var restored = ServerWarpCache.load(directory, account, WarpServerScope.CATREALM, "catrealm.net");
+        assertTrue(restored.warps.getFirst().canTeleport());
+        assertEquals(".Steve", restored.warps.getFirst().name);
+        assertEquals("Steve", ServerWarpCache.load(directory, account, WarpServerScope.CATBUD, "catbud.net").warps
+            .getFirst().name);
+        restored.mergeOfficial(Map.of(), 3000);
+        assertFalse(restored.warps.getFirst().canTeleport());
+        assertTrue(catbud.warps.getFirst().canTeleport());
+        assertEquals(".Steve", TeleportAttempt.target("to by .Steve"));
+        assertNull(TeleportAttempt.target("to by .Steve other"));
+        assertNull(TeleportAttempt.target("to by ..Steve"));
     }
 
     @Test

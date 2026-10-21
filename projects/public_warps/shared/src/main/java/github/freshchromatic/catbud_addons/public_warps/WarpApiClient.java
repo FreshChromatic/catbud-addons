@@ -114,7 +114,7 @@ public final class WarpApiClient {
     public VerifiedPlayer resolvePlayer(String target, String knownUuid) throws Exception {
         String uuid = knownUuid == null ? resolveUuid(target) : knownUuid;
         UUID.fromString(uuid);
-        if (!target.matches("[A-Za-z0-9_]{1,16}")) {
+        if (!target.matches("\\.?[A-Za-z0-9_]{1,16}")) {
             throw new IOException("Invalid player name");
         }
         return new VerifiedPlayer(uuid.toLowerCase(Locale.ROOT), target);

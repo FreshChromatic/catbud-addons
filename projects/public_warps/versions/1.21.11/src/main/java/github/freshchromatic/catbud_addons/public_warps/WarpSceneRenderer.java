@@ -17,7 +17,7 @@ import java.util.*;
 /** Per-scene color/depth targets: static thumbnails reuse their texture instead of redrawing models. */
 public final class WarpSceneRenderer extends PictureInPictureRenderer<WarpSceneState> {
 
-    private record Key(WarpSceneMesh mesh, int width, int height, int scale) {
+    private record Key(WarpSceneMesh mesh, int width, int height, int scale, boolean interactive) {
 
         long estimatedBytes() {
             return 16L * width * height * scale * scale;
@@ -112,7 +112,7 @@ public final class WarpSceneRenderer extends PictureInPictureRenderer<WarpSceneS
 
     @Override
     public void prepare(WarpSceneState state, net.minecraft.client.gui.render.state.GuiRenderState gui, int scale) {
-        Key key = new Key(state.mesh(), state.x1() - state.x0(), state.y1() - state.y0(), scale);
+        Key key = new Key(state.mesh(), state.x1() - state.x0(), state.y1() - state.y0(), scale, state.interactive());
         var slot = slots.computeIfAbsent(key, k -> new Cached());
         slot.prepare(state, gui, scale);
     }
@@ -135,8 +135,7 @@ public final class WarpSceneRenderer extends PictureInPictureRenderer<WarpSceneS
 
         private final PerspectiveProjectionMatrixBuffer projection = new PerspectiveProjectionMatrixBuffer(
             "Catbud warp perspective");
-        private WarpSceneState                          last;
-        private long                                    renderedAt;
+        private final PreviewFrameCache                 frames     = new PreviewFrameCache();
 
         Cached() {
             super(net.minecraft.client.Minecraft.getInstance().renderBuffers().bufferSource());
@@ -147,12 +146,7 @@ public final class WarpSceneRenderer extends PictureInPictureRenderer<WarpSceneS
         }
 
         protected boolean textureIsReadyToBlit(WarpSceneState s) {
-            if (last == null) {
-                return false;
-            }
-            boolean same = last.angle() == s.angle() && last.pitch() == s.pitch() && last.zoom() == s.zoom() && last
-                .inside() == s.inside();
-            boolean reuse = same || System.nanoTime() - renderedAt < 33_333_333L;
+            boolean reuse = frames.reusable(s.view(), s.interactive(), System.nanoTime());
             if (reuse) {
                 cacheHits++;
             }
@@ -194,8 +188,7 @@ public final class WarpSceneRenderer extends PictureInPictureRenderer<WarpSceneS
             }
 
             features.renderAllFeatures();
-            last = s;
-            renderedAt = System.nanoTime();
+            frames.rendered(s.view(), System.nanoTime());
             draws++;
         }
 
