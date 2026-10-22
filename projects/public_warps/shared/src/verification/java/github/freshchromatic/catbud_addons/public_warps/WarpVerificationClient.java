@@ -114,7 +114,7 @@ public final class WarpVerificationClient implements ClientModInitializer {
                                 net.minecraft.world.entity.Entity.RemovalReason.DISCARDED);
                         }
                         var data = PublicWarpsClient.INSTANCE;
-                        for (int n = 0; n < (inputOnly ? 1 : 12); n++) {
+                        for (int n = 0; n < (inputOnly ? 2 : 12); n++) {
                             var w = new WarpData();
                             w.uuid = new UUID(0, n + 1).toString();
                             w.name = "Warp_" + (n + 1);
@@ -198,8 +198,7 @@ public final class WarpVerificationClient implements ClientModInitializer {
                     }
                     case 1 -> {
                         VerificationPlatform.hover(mc, 40, 110);
-                        ((WarpScreen) ClientPlatform.screen(mc)).mouseClicked(new MouseButtonEvent(40, 110,
-                            new MouseButtonInfo(0, 0)), false);
+                        verifyBrowserSelection((WarpScreen) ClientPlatform.screen(mc));
                     }
                     case 2 -> {
                         if (!previewsReady(mc)) {
@@ -221,7 +220,7 @@ public final class WarpVerificationClient implements ClientModInitializer {
                         if (inputOnly) {
                             verifyPreviewInput(mc, (WarpScreen) ClientPlatform.screen(mc));
                             Files.writeString(mc.gameDirectory.toPath().resolve("preview-input-verification.txt"),
-                                "PASS: rendered preview, drag/wheel, focused"
+                                "PASS: grid/frequent selection, right-click ignored, rendered preview, drag/wheel, focused"
                                     + " WASD/Space/Shift, R reset, search focus" + " release, two-step Esc.\n");
                             mc.stop();
                             return;
@@ -275,7 +274,7 @@ public final class WarpVerificationClient implements ClientModInitializer {
                             .orElseThrow();
                         box.setValue("Warp_12");
                         ((WarpScreen) ClientPlatform.screen(mc)).mouseClicked(new MouseButtonEvent(40, 110,
-                            new MouseButtonInfo(0, 0)), false);
+                            new MouseButtonInfo(InputConstants.MOUSE_BUTTON_LEFT, 0)), false);
                     }
                     case 7 -> {
                         capture(mc, "06-entities.png");
@@ -697,11 +696,46 @@ public final class WarpVerificationClient implements ClientModInitializer {
         return (PreviewCameraControl) field.get(screen);
     }
 
+    private void verifyBrowserSelection(WarpScreen screen) throws Exception {
+        var selected = WarpScreen.class.getDeclaredField("selected");
+        selected.setAccessible(true);
+        var common = PublicWarpsClient.INSTANCE.frequent();
+        var gridWidth = WarpScreen.class.getDeclaredField("gridWidth");
+        gridWidth.setAccessible(true);
+        double frequentX = 16 + (gridWidth.getInt(screen) - 12) / 3;
+        if (screen.mouseClicked(new MouseButtonEvent(40, 110, new MouseButtonInfo(InputConstants.MOUSE_BUTTON_RIGHT,
+            0)), false) || selected.get(screen) != null) {
+            throw new AssertionError("Right-click selected a warp");
+        }
+        if (!screen.mouseClicked(new MouseButtonEvent(40, 110, new MouseButtonInfo(InputConstants.MOUSE_BUTTON_LEFT,
+            0)), false) || !PublicWarpsClient.INSTANCE.warps().getFirst().key().equals(selected.get(screen))) {
+            throw new AssertionError("Left-click did not select a grid warp");
+        }
+        if (!screen.mouseClicked(new MouseButtonEvent(frequentX, 70, new MouseButtonInfo(
+            InputConstants.MOUSE_BUTTON_LEFT, 0)), false) || !common.get(1).key().equals(selected.get(screen))) {
+            throw new AssertionError("Left-click did not select a frequent warp");
+        }
+        screen.mouseClicked(new MouseButtonEvent(40, 110, new MouseButtonInfo(InputConstants.MOUSE_BUTTON_LEFT, 0)),
+            false);
+    }
+
     private void verifyPreviewInput(Minecraft mc, WarpScreen screen) throws Exception {
         var control = previewControl(screen);
         var click = previewClick(screen);
         VerificationPlatform.hover(mc, click.x(), click.y());
+        control.resetView(true);
+        double initialYaw = control.yaw();
+        double initialPitch = control.pitch();
         verifyDragZoom(screen);
+        var reset = new MouseButtonEvent(click.x(), click.y(), new MouseButtonInfo(InputConstants.MOUSE_BUTTON_RIGHT,
+            0));
+        if (!screen.mouseClicked(reset, false)) {
+            throw new AssertionError("Preview right-click reset was not accepted");
+        }
+        control.advance(System.nanoTime() / 1e9 + .05, true, true);
+        if (Math.abs(control.yaw() - initialYaw) > 1e-9 || Math.abs(control.pitch() - initialPitch) > 1e-9) {
+            throw new AssertionError("Preview right-click did not reset camera");
+        }
         double before = control.offsetZ();
         double time = System.nanoTime() / 1e9;
         control.advance(time, true, true);
@@ -721,7 +755,8 @@ public final class WarpVerificationClient implements ClientModInitializer {
         if (!screen.keyPressed(new KeyEvent(InputConstants.KEY_R, 0, 0))) {
             throw new AssertionError("R reset was not consumed");
         }
-        screen.mouseClicked(new MouseButtonEvent(60, 40, new MouseButtonInfo(0, 0)), false);
+        screen.mouseClicked(new MouseButtonEvent(60, 40, new MouseButtonInfo(InputConstants.MOUSE_BUTTON_LEFT, 0)),
+            false);
         if (control.focused()) {
             throw new AssertionError("Search click retained preview focus");
         }
@@ -764,6 +799,6 @@ public final class WarpVerificationClient implements ClientModInitializer {
             field.setAccessible(true);
         }
         return new MouseButtonEvent(side.getInt(screen) + width.getInt(screen) / 2.0, (top.getInt(screen) + bottom
-            .getInt(screen)) / 2.0, new MouseButtonInfo(0, 0));
+            .getInt(screen)) / 2.0, new MouseButtonInfo(InputConstants.MOUSE_BUTTON_LEFT, 0));
     }
 }

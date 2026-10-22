@@ -2,6 +2,8 @@ package github.freshchromatic.catbud_addons.public_warps;
 
 public final class PreviewMotion {
 
+    private static final double HOVER_VIEW_SECONDS = 1.5;
+
     private double value, start, target, started, angle, last;
     private double hoveredAt = Double.NaN;
 
@@ -10,10 +12,10 @@ public final class PreviewMotion {
             hoveredAt = now;
         }
         double elapsed = hovered ? Math.max(0, now - hoveredAt) : 0;
-        boolean inside = hovered && !reduced && elapsed % 5 >= 2.5;
+        boolean inside = hovered && !reduced && elapsed % (HOVER_VIEW_SECONDS * 2) >= HOVER_VIEW_SECONDS;
         double blend = update(now, false, inside, reduced);
         if (hovered && !reduced) {
-            angle = elapsed * Math.PI * 2 / 2.5;
+            angle = elapsed * Math.PI * 2 / HOVER_VIEW_SECONDS;
         } else {
             hoveredAt = Double.NaN;
             if (blend == 0 || reduced) {

@@ -275,11 +275,11 @@ public final class WarpScreen extends Screen {
     @Override
     public boolean mouseClicked(MouseButtonEvent click, boolean doubleClick) {
         if (previewContains(click.x(), click.y())) {
-            if (click.button() == 1) {
+            if (click.button() == InputConstants.MOUSE_BUTTON_RIGHT) {
                 cameraControl.resetView(data.reducedMotion());
                 return true;
             }
-            if (click.button() == 0) {
+            if (click.button() == InputConstants.MOUSE_BUTTON_LEFT) {
                 setFocused(null);
                 cameraControl.focus(true);
                 draggingPreview = true;
@@ -291,7 +291,7 @@ public final class WarpScreen extends Screen {
         if (super.mouseClicked(click, doubleClick)) {
             return true;
         }
-        if (click.button() != 0) {
+        if (click.button() != InputConstants.MOUSE_BUTTON_LEFT) {
             return false;
         }
         double x = click.x(), y = click.y();
@@ -355,7 +355,7 @@ public final class WarpScreen extends Screen {
 
     @Override
     public boolean mouseDragged(MouseButtonEvent event, double dx, double dy) {
-        if (draggingPreview && event.button() == 0) {
+        if (draggingPreview && event.button() == InputConstants.MOUSE_BUTTON_LEFT) {
             cameraControl.drag(dx, dy);
             return true;
         }
@@ -364,7 +364,8 @@ public final class WarpScreen extends Screen {
 
     @Override
     public boolean mouseReleased(MouseButtonEvent event) {
-        if (draggingPreview && (event.button() == 0 || event.button() == 1)) {
+        if (draggingPreview && (event.button() == InputConstants.MOUSE_BUTTON_LEFT || event
+            .button() == InputConstants.MOUSE_BUTTON_RIGHT)) {
             draggingPreview = false;
             setDragging(false);
             return true;
