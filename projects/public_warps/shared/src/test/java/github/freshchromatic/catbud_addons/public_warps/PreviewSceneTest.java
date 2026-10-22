@@ -93,22 +93,22 @@ class PreviewSceneTest {
     }
 
     @Test
-    void hoverAlternatesTwoAndHalfSecondViewsAndResetsOnExit() {
+    void hoverAlternatesOneAndHalfSecondViewsAndResetsOnExit() {
         var motion = new PreviewMotion();
         assertEquals(0, motion.updateHover(1, true, false));
-        assertEquals(0, motion.updateHover(3.49, true, false));
+        assertEquals(0, motion.updateHover(2.49, true, false));
         assertTrue(motion.angle() > Math.PI * 1.9);
-        motion.updateHover(3.5, true, false);
-        assertEquals(1, motion.updateHover(3.8, true, false), 1e-6);
-        motion.updateHover(6, true, false);
-        assertEquals(0, motion.updateHover(6.3, true, false), 1e-6);
-        motion.updateHover(8.5, true, false);
-        assertEquals(1, motion.updateHover(8.8, true, false), 1e-6);
-        motion.updateHover(8.9, false, false);
-        assertEquals(0, motion.updateHover(9.2, false, false), 1e-6);
+        motion.updateHover(2.5, true, false);
+        assertEquals(1, motion.updateHover(2.8, true, false), 1e-6);
+        motion.updateHover(4, true, false);
+        assertEquals(0, motion.updateHover(4.3, true, false), 1e-6);
+        motion.updateHover(5.5, true, false);
+        assertEquals(1, motion.updateHover(5.8, true, false), 1e-6);
+        motion.updateHover(5.9, false, false);
+        assertEquals(0, motion.updateHover(6.2, false, false), 1e-6);
         assertEquals(0, motion.angle());
-        assertEquals(0, motion.updateHover(10, true, true));
-        assertEquals(0, motion.updateHover(14, true, true));
+        assertEquals(0, motion.updateHover(7, true, true));
+        assertEquals(0, motion.updateHover(11, true, true));
         assertEquals(0, motion.angle());
     }
 }
