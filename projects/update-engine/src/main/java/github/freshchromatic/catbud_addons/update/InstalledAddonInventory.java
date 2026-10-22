@@ -39,9 +39,9 @@ public record InstalledAddonInventory(Path mods, List<InstalledJar> jars, List<S
             for (Path path : paths.filter(path -> path.getFileName().toString().endsWith(".jar")).sorted().toList()) {
                 JarMetadata metadata;
                 try {
-                    metadata = JarMetadata.read(path);
+                    metadata = JarMetadata.inspectInstalled(path);
                 } catch (IOException error) {
-                    problems.add("Cannot safely inspect " + path.getFileName());
+                    problems.add("Cannot safely inspect " + path.getFileName() + ": " + error.getMessage());
                     continue;
                 }
                 if (metadata.provides().isEmpty()) {

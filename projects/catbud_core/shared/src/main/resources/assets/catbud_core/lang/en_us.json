@@ -178,6 +178,7 @@
   "updates.core.check_now": "Check for updates",
   "updates.core.automatic": "Check automatically",
   "updates.core.download": "Download updates",
+  "updates.core.download_help": "After downloading and verification, updates install automatically when the game closes. Wait for installation to finish before launching again.",
   "updates.core.progress": "Download progress",
   "updates.core.cancel": "Cancel download / installation",
   "updates.core.exit": "Close game and install",
@@ -224,7 +225,8 @@
   "notices.core.unavailable": "Announcements unavailable",
   "notices.core.cached": "Showing cached notices; try again later",
   "updates.core.guard": "Launcher guard",
-  "updates.core.guard_required": "Set up the guard or download manually",
+  "updates.core.guard_enabled": "Enabled",
+  "updates.core.guard_optional": "Not enabled (optional; updates still work)",
   "updates.core.copy_guard": "Copy pre-launch command",
-  "updates.core.guard_help": "Paste this command into your launcher pre-launch command setting, enable aborting launch on command failure, then restart once. Keep this command enabled for every launch. Launchers without pre-launch commands require manual downloads."
+  "updates.core.guard_help": "Updates work without a launcher guard. To prevent launching before installation finishes, paste the copied command into your launcher pre-launch setting, enable aborting on command failure, keep the setting enabled and restart the game."
 }

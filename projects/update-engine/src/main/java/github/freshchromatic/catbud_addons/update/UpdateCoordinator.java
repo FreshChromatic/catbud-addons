@@ -46,7 +46,6 @@ public final class UpdateCoordinator implements AutoCloseable {
     private final Path                              directory;
     private final Callable<byte[]>                  helperResource;
     private final Set<String>                       installedModules;
-    private final boolean                           launcherGuarded;
     private final ExecutorService                   worker    = Executors.newSingleThreadExecutor(work -> {
                                                                   var thread = new Thread(work, "catbud-update");
                                                                   thread.setDaemon(true);
@@ -76,7 +75,6 @@ public final class UpdateCoordinator implements AutoCloseable {
         this.directory = environment.directory();
         this.helperResource = helperResource;
         this.installedModules = environment.installedModules();
-        this.launcherGuarded = environment.launcherGuarded();
         worker.execute(this::restore);
     }
 
@@ -181,12 +179,17 @@ public final class UpdateCoordinator implements AutoCloseable {
         }
     }
 
-    public synchronized void download() {
+    public synchronized boolean canDownload() {
         UpdatePlan plan = snapshot.plan();
-        if (!launcherGuarded || busy || plan == null || plan.replacements().isEmpty() || !List.of(InstallState.IDLE,
-            InstallState.FAILED, InstallState.ROLLED_BACK, InstallState.INSTALLED).contains(snapshot.install())) {
+        return !busy && plan != null && !plan.replacements().isEmpty() && List.of(InstallState.IDLE,
+            InstallState.FAILED, InstallState.ROLLED_BACK, InstallState.INSTALLED).contains(snapshot.install());
+    }
+
+    public synchronized void download() {
+        if (!canDownload()) {
             return;
         }
+        UpdatePlan plan = snapshot.plan();
         busy = true;
         pending = null;
         cancelled.set(false);

@@ -53,7 +53,7 @@ public final class AddonUpdateClient implements AutoCloseable {
             "release-catalog.json"));
         coordinator = new UpdateCoordinator(http, catalog, new NotificationStateStore(config.resolve(
             "notifications.json")), this::inventory, new github.freshchromatic.catbud_addons.update.UpdateEnvironment(
-                minecraft, version("fabricloader"), config.resolve("updates"), modules, guarded()),
+                minecraft, version("fabricloader"), config.resolve("updates"), modules),
             AddonUpdateClient::installerResource);
     }
 

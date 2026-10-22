@@ -3,7 +3,6 @@ package github.freshchromatic.catbud_addons.update;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 
 public final class UpdatePlanner {
 
@@ -22,11 +21,19 @@ public final class UpdatePlanner {
             }
         }
         var replacements = new ArrayList<UpdatePlan.Replacement>();
-        var futureMods = new HashSet<String>();
+        var futureVersions = new HashMap<String, String>();
         for (var jar : inventory.jars()) {
             var artifact = artifacts.get(jar.metadata().modId());
             if (artifact == null) {
-                throw new IllegalArgumentException("No compatible artifact for " + jar.metadata().modId());
+                boolean publishedModule = manifest.artifacts().stream().anyMatch(candidate -> candidate.modId().equals(
+                    jar.metadata().modId()));
+                if (publishedModule) {
+                    throw new IllegalArgumentException("No compatible artifact for " + jar.metadata().modId());
+                }
+                for (var provided : jar.metadata().provides()) {
+                    futureVersions.putIfAbsent(provided.modId(), provided.version());
+                }
+                continue;
             }
             int comparison = ReleaseVersion.parse(artifact.version()).compareTo(ReleaseVersion.parse(jar.metadata()
                 .version()));
@@ -38,7 +45,7 @@ public final class UpdatePlanner {
                 throw new IllegalArgumentException("Minecraft runtime does not meet the release requirements");
             }
             for (var provided : artifact.provides()) {
-                futureMods.add(provided.modId());
+                futureVersions.put(provided.modId(), provided.version());
             }
             if (comparison == 0) {
                 if (jar.sha256().equals(artifact.sha256())) {
@@ -57,13 +64,13 @@ public final class UpdatePlanner {
             }
             replacements.add(new UpdatePlan.Replacement(jar.path(), jar.sha256(), artifact));
         }
-        if (!futureMods.contains(AddonModule.CORE.modId())) {
+        if (!futureVersions.containsKey(AddonModule.CORE.modId())) {
             throw new IllegalArgumentException(
                 "Manual update required: install standalone Catbud Core before using addons without embedded Core");
         }
         for (var rule : inventory.compatibility()) {
-            boolean present = futureMods.contains(rule.modId());
-            boolean matches = present && rule.matches().test(manifest.version());
+            String version = futureVersions.get(rule.modId());
+            boolean matches = version != null && rule.matches().test(version);
             if ((rule.required() && !matches) || (!rule.required() && matches)) {
                 throw new IllegalArgumentException("Update conflicts with installed mod dependency: " + rule.owner());
             }

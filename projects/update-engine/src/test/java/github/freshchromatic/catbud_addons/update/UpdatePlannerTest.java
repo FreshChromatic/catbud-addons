@@ -120,6 +120,33 @@ class UpdatePlannerTest {
     }
 
     @Test
+    void excludedMonsterWaveStaysInstalledWhilePublishedModulesUpdate() throws Exception {
+        Path mods = Files.createDirectory(temporary.resolve("partial-release"));
+        jar(mods, AddonModule.CORE, "1.0.3", false);
+        Path monster = jar(mods, AddonModule.MONSTER_WAVE, "1.0.3", false);
+        String originalHash = FileIntegrity.sha256(monster);
+        var scanned = InstalledAddonInventory.scan(mods, List.of("catbud_core", "catbud_monster_wave"));
+        var inventory = new InstalledAddonInventory(scanned.mods(), scanned.jars(), scanned.problems(), List.of(
+            new InstalledAddonInventory.CompatibilityRule("third_party", "catbud_monster_wave", true, version -> version
+                .equals("1.0.3")), new InstalledAddonInventory.CompatibilityRule("catbud_monster_wave", "catbud_core",
+                    true, version -> version.equals("1.0.4"))));
+        var complete = manifest("1.0.4", false);
+        var partial = new ReleaseManifest(complete.schemaVersion(), complete.releaseId(), complete.version(), complete
+            .channel(), complete.publishedAt(), complete.repository(), complete.tag(), complete.releasePage(), complete
+                .commit(), complete.artifacts().stream().filter(artifact -> !artifact.module().equals("monster_wave"))
+                    .toList(), complete.notes());
+        var plan = UpdatePlanner.plan(partial, inventory, "26.2", "0.19.5", 25);
+        assertEquals(1, plan.replacements().size());
+        assertEquals("core", plan.replacements().getFirst().artifact().module());
+        assertEquals(originalHash, FileIntegrity.sha256(monster));
+        var incompatible = new InstalledAddonInventory(scanned.mods(), scanned.jars(), scanned.problems(), List.of(
+            new InstalledAddonInventory.CompatibilityRule("catbud_monster_wave", "catbud_core", true, version -> version
+                .equals("1.0.3"))));
+        assertThrows(IllegalArgumentException.class, () -> UpdatePlanner.plan(partial, incompatible, "26.2", "0.19.5",
+            25));
+    }
+
+    @Test
     void blocksDuplicateAndUnrecognizedLoadedOrigins() throws Exception {
         Path mods = Files.createDirectory(temporary.resolve("duplicates"));
         Path original = jar(mods, AddonModule.MAGIC_TOWER, "1.0.3");

@@ -11,11 +11,16 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.KeyPairGenerator;
+import java.security.PrivateKey;
+import java.security.Signature;
 import java.util.Base64;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 import org.junit.jupiter.api.Test;
@@ -64,6 +69,7 @@ class ReleaseRevisionIntegrationTest {
         assertEquals("v1.0.2-r2", plan.releaseId());
         assertEquals(12, revised.artifacts().size());
         assertEquals(12, original.artifacts().size());
+        requireDownloadWithoutLauncherGuard(revised, inventory, verifier, pair.getPrivate());
 
         Path batch = Files.createDirectory(temporary.resolve("batch"));
         Path downloads = Files.createDirectory(batch.resolve("downloads"));
@@ -87,6 +93,50 @@ class ReleaseRevisionIntegrationTest {
             installer.recover();
             FileIntegrity.require(replacement.oldJar(), replacement.oldHash());
             assertFalse(Files.exists(mods.resolve(item.newFile())));
+        }
+    }
+
+    private void requireDownloadWithoutLauncherGuard(ReleaseManifest manifest, InstalledAddonInventory inventory, ManifestVerifier verifier, PrivateKey key)
+        throws Exception {
+        Path config = Files.createDirectory(temporary.resolve("unguarded-config"));
+        Path cache = config.resolve("release-catalog.json");
+        var gson = new Gson();
+        String body = gson.toJson(manifest);
+        var signer = Signature.getInstance("Ed25519");
+        signer.initSign(key);
+        signer.update(body.getBytes(StandardCharsets.UTF_8));
+        var envelope = new ManifestVerifier.Envelope(body, "test", Base64.getEncoder().encodeToString(signer.sign()));
+        Files.writeString(cache, gson.toJson(Map.of("schemaVersion", 1, "minecraft", "26.2", "state", "available",
+            "checkedAt", System.currentTimeMillis(), "envelope", envelope)));
+        var requested = new CountDownLatch(1);
+        var http = new ReleaseHttpClient(request -> {
+            requested.countDown();
+            throw new java.io.IOException("Fresh release approval unavailable");
+        });
+        var catalog = new ReleaseCatalogClient(http, verifier, "26.2", cache);
+        var environment = new UpdateEnvironment("26.2", "0.19.5", config.resolve("updates"), Set.of("core"));
+        try (var coordinator = new UpdateCoordinator(http, catalog, new NotificationStateStore(config.resolve(
+            "notifications.json")), () -> inventory, environment, () -> {
+                fail("An unapproved release must not start the installer");
+                return new byte[0];
+            })) {
+            long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(5);
+            while (!coordinator.canDownload() && System.nanoTime() < deadline) {
+                Thread.sleep(10);
+            }
+            assertTrue(coordinator.canDownload());
+            coordinator.download();
+            assertTrue(requested.await(5, TimeUnit.SECONDS));
+            deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(5);
+            while (coordinator.snapshot().install() != UpdateCoordinator.InstallState.FAILED && System
+                .nanoTime() < deadline) {
+                Thread.sleep(10);
+            }
+            assertEquals(UpdateCoordinator.InstallState.FAILED, coordinator.snapshot().install());
+            assertEquals("Fresh release approval unavailable", coordinator.snapshot().detail());
+            for (var jar : inventory.jars()) {
+                FileIntegrity.require(jar.path(), jar.sha256());
+            }
         }
     }
 

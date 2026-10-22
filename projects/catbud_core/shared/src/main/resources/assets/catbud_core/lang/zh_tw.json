@@ -178,6 +178,7 @@
   "updates.core.check_now": "檢查更新",
   "updates.core.automatic": "自動檢查更新",
   "updates.core.download": "下載更新",
+  "updates.core.download_help": "下載並驗證後，關閉遊戲便會自動安裝。請等待安裝完成後再啟動遊戲。",
   "updates.core.progress": "下載進度",
   "updates.core.cancel": "取消下載／待安裝",
   "updates.core.exit": "關閉遊戲並安裝",
@@ -224,7 +225,8 @@
   "notices.core.unavailable": "暫時無法取得公告",
   "notices.core.cached": "顯示本機快取；可稍後重試",
   "updates.core.guard": "啟動器防護",
-  "updates.core.guard_required": "需先設定，或使用手動下載",
+  "updates.core.guard_enabled": "已啟用",
+  "updates.core.guard_optional": "未啟用（選用，不影響更新）",
   "updates.core.copy_guard": "複製啟動前指令",
-  "updates.core.guard_help": "在啟動器的「啟動前指令」貼上此指令，啟用「指令失敗時停止啟動」，再重新啟動一次遊戲。每次啟動均須保留此設定。不支援啟動前指令的啟動器請使用手動下載。"
+  "updates.core.guard_help": "更新不需設定啟動器防護。若要避免安裝尚未完成就啟動遊戲，可將複製的指令貼到啟動器的「啟動前指令」，啟用「指令失敗時停止啟動」，並保留設定後重新啟動遊戲。"
 }

@@ -24,22 +24,36 @@ public record JarMetadata(String modId, String version, Map<String, String> requ
     }
 
     public static JarMetadata read(Path path) throws IOException {
-        if (Files.isSymbolicLink(path) || Files.size(path) > ReleaseManifest.MAX_ARTIFACT_BYTES) {
+        return read(path, false);
+    }
+
+    static JarMetadata inspectInstalled(Path path) throws IOException {
+        return read(path, true);
+    }
+
+    private static JarMetadata read(Path path, boolean inventory) throws IOException {
+        if (Files.isSymbolicLink(path) || (!inventory && Files.size(path) > ReleaseManifest.MAX_ARTIFACT_BYTES)) {
             throw new IOException("Unsupported addon archive: " + path.getFileName());
         }
         try (ZipFile zip = new ZipFile(path.toFile())) {
             var entry = zip.getEntry("fabric.mod.json");
             if (entry == null) {
+                if (inventory) {
+                    return new JarMetadata("", "", Map.of(), List.of());
+                }
                 throw new IOException("Archive has no fabric.mod.json");
             }
             JsonObject root;
             try (var stream = zip.getInputStream(entry)) {
                 root = metadata(stream);
             }
+            if (inventory && AddonModule.forMod(root.get("id").getAsString()).isPresent()) {
+                return read(path);
+            }
             var provided = new ArrayList<ReleaseManifest.ProvidedMod>();
             addProvided(root, provided);
             if (root.has("jars")) {
-                if (root.getAsJsonArray("jars").size() > 16) {
+                if (root.getAsJsonArray("jars").size() > (inventory ? 256 : 16)) {
                     throw new IOException("Too many embedded archives");
                 }
                 for (var nested : root.getAsJsonArray("jars")) {
@@ -48,12 +62,12 @@ public record JarMetadata(String modId, String version, Map<String, String> requ
                         throw new IOException("Missing embedded archive");
                     }
                     try (var input = zip.getInputStream(file)) {
-                        readNested(bounded(input, (int) ReleaseManifest.MAX_ARTIFACT_BYTES), provided, 0);
+                        readNested(bounded(input, (int) ReleaseManifest.MAX_ARTIFACT_BYTES), provided, 0, inventory);
                     }
                 }
             }
             Map<String, String> requires = new LinkedHashMap<>();
-            if (root.has("depends")) {
+            if (!inventory && root.has("depends")) {
                 for (var dependency : root.getAsJsonObject("depends").entrySet()) {
                     requires.put(dependency.getKey(), dependency.getValue().getAsString());
                 }
@@ -64,7 +78,7 @@ public record JarMetadata(String modId, String version, Map<String, String> requ
         }
     }
 
-    private static void readNested(byte[] bytes, List<ReleaseManifest.ProvidedMod> provided, int depth)
+    private static void readNested(byte[] bytes, List<ReleaseManifest.ProvidedMod> provided, int depth, boolean inventory)
         throws IOException {
         if (depth > 2) {
             throw new IOException("Embedded archive nesting exceeds limit");
@@ -87,13 +101,16 @@ public record JarMetadata(String modId, String version, Map<String, String> requ
                 if (entry.getName().equals("fabric.mod.json")) {
                     root = metadata(new ByteArrayInputStream(contents));
                 } else if (entry.getName().endsWith(".jar")) {
-                    if (entries.size() >= 16) {
+                    if (entries.size() >= (inventory ? 256 : 16)) {
                         throw new IOException("Embedded archive size limit exceeded");
                     }
                     entries.put(entry.getName(), contents);
                 }
             }
             if (root == null) {
+                if (inventory) {
+                    return;
+                }
                 throw new IOException("Embedded archive has no metadata");
             }
             addProvided(root, provided);
@@ -103,7 +120,7 @@ public record JarMetadata(String modId, String version, Map<String, String> requ
                     if (contents == null) {
                         throw new IOException("Missing embedded dependency");
                     }
-                    readNested(contents, provided, depth + 1);
+                    readNested(contents, provided, depth + 1, inventory);
                 }
             }
         }
