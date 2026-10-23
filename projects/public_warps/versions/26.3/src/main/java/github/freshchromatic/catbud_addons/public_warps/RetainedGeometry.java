@@ -29,8 +29,7 @@ public final class RetainedGeometry implements AutoCloseable {
 
     private static final RenderPipeline PIPELINE = RenderPipelines.register(RenderPipeline.builder(
         RenderPipelines.ENTITY_SNIPPET).withLocation(Identifier.fromNamespaceAndPath("catbud_public_warps",
-            "pipeline/geometry")).withVertexShader(Identifier.fromNamespaceAndPath("catbud_public_warps",
-                "core/warp_geometry")).withShaderDefine("ALPHA_CUTOUT", .1f).withShaderDefine("PER_FACE_LIGHTING")
+            "pipeline/geometry")).withShaderDefine("ALPHA_CUTOUT", .1f).withShaderDefine("PER_FACE_LIGHTING")
         .withBindGroupLayout(BindGroupLayouts.SAMPLER1).withColorTargetState(RenderPipelines.ENTITY_CUTOUT
             .getColorTargetStates().getFirst()).withDepthStencilState(RenderPipelines.ENTITY_CUTOUT
                 .getDepthStencilState()).withCull(false).build());

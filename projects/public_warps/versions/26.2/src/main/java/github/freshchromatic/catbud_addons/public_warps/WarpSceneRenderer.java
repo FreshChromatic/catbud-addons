@@ -135,6 +135,7 @@ public final class WarpSceneRenderer extends PictureInPictureRenderer<WarpSceneS
 
         private final ProjectionMatrixBuffer projection = new ProjectionMatrixBuffer("Catbud warp perspective");
         private final PreviewFrameCache      frames     = new PreviewFrameCache();
+        private final SceneLighting          lighting   = new SceneLighting();
 
         Cached() {
             super();
@@ -173,8 +174,14 @@ public final class WarpSceneRenderer extends PictureInPictureRenderer<WarpSceneS
                     submitFaces(pose, collector, group.getKey(), group.getValue(), false);
                 }
             } else {
-                for (var group : retained) {
-                    group.draw(pose);
+                var previousLighting = RenderSystem.getShaderLights();
+                try {
+                    RenderSystem.setShaderLights(lighting.forView(pose.last().pose()));
+                    for (var group : retained) {
+                        group.draw(pose);
+                    }
+                } finally {
+                    RenderSystem.setShaderLights(previousLighting);
                 }
             }
             var cam = new CameraRenderState();
@@ -208,6 +215,7 @@ public final class WarpSceneRenderer extends PictureInPictureRenderer<WarpSceneS
         @Override
         public void close() {
             projection.close();
+            lighting.close();
             super.close();
         }
     }
