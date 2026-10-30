@@ -2,7 +2,7 @@
 
 更新核心為不依賴 Minecraft 的 Java 21 程式庫。Core 在四個遊戲版本使用同一套版本、簽章、盤點、下載及通知規則；獨立安裝 JAR 只包含 JDK 相依的 `update.install` package。
 
-程式支援 Core、Magic Tower、公共傳點、怪物波次，目標遊戲為 1.21.11、26.1.2、26.2、26.3。實際發版模組由 `release/modules.json` 明列，目前只發布 Core、Magic Tower、公共傳點，共十二個可安裝 JAR。需要發布怪物波次時再將 `monster_wave` 加入清單。
+程式支援 Core、Magic Tower、公共傳點、怪物波次、空島輔助，目標遊戲為 1.21.11、26.1.2、26.2、26.3。實際發版模組由 `release/modules.json` 明列，目前只發布 Core、Magic Tower、公共傳點，共十二個可安裝 JAR。需要發布怪物波次或空島輔助時再將 `monster_wave` 或 `island_assistive` 加入清單。
 
 ## 玩家操作
 

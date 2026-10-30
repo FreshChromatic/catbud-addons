@@ -89,7 +89,7 @@ public final class MonsterWaveVerificationClient implements ClientModInitializer
         MonsterWaveClient.bossbar(ClientboundBossEventPacket.createUpdateNamePacket(bar));
         check(session.phase() == MonsterWaveSession.Phase.READY, "Ready packet identified", results);
         MonsterWaveClient.teleport("position_packet");
-        session.tick(new MonsterWaveSession.Observation(true, true, arena, "minecraft:custom", 0, 64, 0, 4));
+        session.tick(new MonsterWaveSession.Observation(true, true, arena, "world:custom", 0, 64, 0, 4));
         check(session.active(), "Active at exactly four health points", results);
         bar.setName(Component.translatable(MonsterWaveSignals.START));
         MonsterWaveClient.bossbar(ClientboundBossEventPacket.createUpdateNamePacket(bar));
@@ -108,7 +108,7 @@ public final class MonsterWaveVerificationClient implements ClientModInitializer
         MonsterWaveClient.titleTiming(10, 70, 20);
         MonsterWaveClient.titleClear(true);
         check(session.active(), "Ready exit retains protection", results);
-        session.tick(new MonsterWaveSession.Observation(true, true, arena, "minecraft:custom", 0, 64, 0, 3.5F));
+        session.tick(new MonsterWaveSession.Observation(true, true, arena, "world:custom", 0, 64, 0, 3.5F));
         check(session.lastSummary().reason() == RunEvent.EndReason.LOW_HEALTH, "Low health terminates with LOW_HEALTH",
             results);
         check(session.lastSink() == DisabledRunSink.INSTANCE && session.lastSink().location() == null,
@@ -125,9 +125,9 @@ public final class MonsterWaveVerificationClient implements ClientModInitializer
         check(session.mode() == MonsterWaveSession.Mode.AUTO, "Reconnect restores automatic detection", results);
         check(session.awaitingResume(), "Disconnected active custom run awaits recovery", results);
         session.connectionJoined(identity);
-        session.tick(new MonsterWaveSession.Observation(true, true, new Object(), "minecraft:custom", 0, 64, 0, 4));
+        session.tick(new MonsterWaveSession.Observation(true, true, new Object(), "world:custom", 0, 64, 0, 4));
         check(session.active(), "Rejoining custom restores protection without queue signals", results);
-        session.tick(new MonsterWaveSession.Observation(true, true, arena, "minecraft:custom", 0, 64, 0, 3));
+        session.tick(new MonsterWaveSession.Observation(true, true, arena, "world:custom", 0, 64, 0, 3));
         check(session.lastSummary().reason() == RunEvent.EndReason.LOW_HEALTH,
             "Resumed protection reacts to low health", results);
         check(session.lastSink() == DisabledRunSink.INSTANCE, "Resumed run recording disabled", results);

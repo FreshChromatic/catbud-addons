@@ -1,0 +1,6 @@
+{
+  "alert": {
+    "subtitle": "island.sound.subtitle",
+    "sounds": ["catbud_island_assistive:alert"]
+  }
+}

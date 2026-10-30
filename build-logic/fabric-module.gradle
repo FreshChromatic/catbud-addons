@@ -49,6 +49,7 @@ dependencies {
         def core = project(":projects:catbud_core:${minecraft_version}")
         if (legacy) {
             implementation project(path: core.path, configuration: 'namedElements')
+            runtimeOnly project(':update-engine')
         } else {
             implementation core
         }
@@ -114,4 +115,10 @@ if (module == 'monster_wave' && project.hasProperty('verifyMonsterWave')) {
 }
 if (module == 'catbud_core' && project.hasProperty('verifyUpdates')) {
     apply from: rootProject.file('build-logic/updates-verification.gradle')
+}
+if (module == 'island_assistive' && project.hasProperty('verifyIslandAssistive')) {
+    apply from: rootProject.file('build-logic/island-assistive-verification.gradle')
+}
+if (module == 'island_assistive' && minecraft_version == '26.2' && project.hasProperty('verifyIslandMining')) {
+    apply from: rootProject.file('build-logic/island-mining-verification.gradle')
 }

@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "id": "catbud_island_assistive",
+  "version": "${version}",
+  "name": "Catbud Island Assistive 空島輔助",
+  "description": "Skyblock mob alerts and fixed-target mining with shape-aware aiming and local movement.",
+  "environment": "client",
+  "mixins": ["island_assistive.mixins.json"],
+  "authors": ["Catbud"],
+  "entrypoints": {
+    "client": ["github.freshchromatic.catbud_addons.island_assistive.IslandAssistiveClient"]
+  },
+  "depends": {
+    "catbud_core": ">=${core_version}",
+    "fabricloader": ">=${loader_version}",
+    "fabric-api": "*",
+    "minecraft": "~${minecraft_version}",
+    "java": ">=${java_version}"
+  }
+}

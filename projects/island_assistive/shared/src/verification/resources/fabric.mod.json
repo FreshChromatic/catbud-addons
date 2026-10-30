@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "id": "catbud_island_assistive_verification",
+  "version": "1.0.0",
+  "name": "Island Assistive Verification",
+  "environment": "client",
+  "entrypoints": {
+    "client": ["github.freshchromatic.catbud_addons.island_assistive.IslandAssistiveVerificationClient"]
+  },
+  "depends": {
+    "catbud_island_assistive": "*",
+    "catbud_core": "*"
+  }
+}

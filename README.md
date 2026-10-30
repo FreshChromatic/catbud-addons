@@ -2,6 +2,8 @@
 
 有一點點好用的貓芽附加模組
 
+新增[空島輔助模組](projects/island_assistive/README.md)：預設關閉的附近生物提醒，預設偵測 256 格內的殭屍村民；新發現目標每 5 秒播放音效，直到點擊聊天室停止。
+
 新增[怪物浪潮模組](projects/monster_wave/README.md)：沿用魔幻之塔的入場偵測，提供低血量與扣血預警斷線保護，支援重加入後恢復保護；已停用副本事件檔案紀錄。
 
 ## 幫助
@@ -23,6 +25,12 @@ catbud-addons/
     │   └── versions/{1.21.11,26.1.2,26.2,26.3}/
     │       ├── build.gradle / version.properties
     │       └── src/main/java/    # 客戶端、輸入與 HUD 轉接層；舊版設定介面
+    ├── island_assistive/
+    │   ├── shared/src/main/       # 生物提醒、名單、音效、設定與資源
+    │   ├── shared/src/modern/     # 新版名單畫面與客戶端指令
+    │   ├── shared/src/test/
+    │   ├── shared/src/verification/
+    │   └── versions/{1.21.11,26.1.2,26.2,26.3}/
     └── magic_tower/
         ├── shared/src/main/      # 工作階段、掃描、尋路、HUD 演算法、資源
         ├── shared/src/test/
@@ -42,10 +50,10 @@ catbud-addons/
 .\gradlew.bat :projects:magic_tower:26.1.2:assemble
 ```
 
-`assemble` 會打包全部十六種「模組 × 版本」組合，但不會執行測試或啟動客戶端。單一模組版本可用 `./gradlew.bat :projects:monster_wave:26.2:assemble` 打包。
+`assemble` 會打包全部二十種「模組 × 版本」組合，但不會執行測試或啟動客戶端。單一模組版本可用 `./gradlew.bat :projects:island_assistive:26.2:assemble` 打包。
 
-`releaseJars` 會將四個版本的 Core、Magic Tower、公共傳點與怪物浪潮可安裝 JAR 輸出至 `out/`。
-Magic Tower、公共傳點與怪物浪潮 JAR 不再內嵌 Core。玩家須另外安裝一份相同 Minecraft 版本的 Core，供所有附加模組共用。全部模組版本為 **1.0.2**。
+`releaseJars` 會將四個版本的 Core、Magic Tower、公共傳點、怪物浪潮與空島輔助可安裝 JAR 輸出至 `out/`。
+Magic Tower、公共傳點、怪物浪潮與空島輔助 JAR 不內嵌 Core。玩家須另外安裝一份相同 Minecraft 版本的 Core，供所有附加模組共用。全部模組版本為 **1.0.2**。
 
 26.1.2 的產物為：
 
@@ -54,6 +62,7 @@ out/catbud-core-26.1.2-1.0.2.jar
 out/catbud-magic_tower-26.1.2-1.0.2.jar
 out/catbud-public_warps-26.1.2-1.0.2.jar
 out/catbud-monster_wave-26.1.2-1.0.2.jar
+out/catbud-island_assistive-26.1.2-1.0.2.jar
 ```
 
 開發用與原始碼產物位於 `projects/<module>/versions/<minecraft>/build/libs/`。各個獨立產物位於：

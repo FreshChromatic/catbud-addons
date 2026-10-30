@@ -20,9 +20,10 @@ public final class TowerSession {
     private static final String READY_KEY = "plugins.venue_manager.venue_waiting_activate";
     private static final String FLOOR_KEY = "plugins.magic_tower.waiting_layer_response";
 
-    private static final Identifier CUSTOM_DIMENSION      = Identifier.fromNamespaceAndPath("minecraft", "custom");
-    private static final long       VANISH_GRACE_MS       = 3_000;
-    private static final long       READY_VANISH_GRACE_MS = 15_000;
+    private static final Identifier CUSTOM_DIMENSION        = Identifier.fromNamespaceAndPath("world", "custom");
+    private static final Identifier LEGACY_CUSTOM_DIMENSION = Identifier.fromNamespaceAndPath("minecraft", "custom");
+    private static final long       VANISH_GRACE_MS         = 3_000;
+    private static final long       READY_VANISH_GRACE_MS   = 15_000;
 
     private enum Phase {
         IDLE, QUEUED, READY, ACTIVE
@@ -126,7 +127,7 @@ public final class TowerSession {
         if (suspended) {
             return;
         }
-        if (isActive() && CUSTOM_DIMENSION.equals(lastDimension) && connectionIdentity != null) {
+        if (isActive() && isCustomDimension(lastDimension) && connectionIdentity != null) {
             suspended = true;
             bossId = null;
             vanishedAt = -1;
@@ -147,14 +148,18 @@ public final class TowerSession {
     void updateConnection(String server, UUID player, Identifier dimension) {
         ConnectionIdentity current = server == null ? null : new ConnectionIdentity(server, player);
         if (suspended) {
-            if (connectionIdentity.equals(current) && CUSTOM_DIMENSION.equals(dimension)) {
+            if (connectionIdentity.equals(current) && isCustomDimension(dimension)) {
                 suspended = false;
-                CatbudAddonsClient.LOGGER.debug("重新登入 minecraft:custom，恢復魔幻之塔狀態");
+                CatbudAddonsClient.LOGGER.debug("重新登入 {}，恢復魔幻之塔狀態", dimension);
             } else {
                 resetConnection();
             }
         }
         connectionIdentity = current;
+    }
+
+    private static boolean isCustomDimension(Identifier dimension) {
+        return CUSTOM_DIMENSION.equals(dimension) || LEGACY_CUSTOM_DIMENSION.equals(dimension);
     }
 
     private void clearWorldReferences() {
@@ -275,7 +280,7 @@ public final class TowerSession {
         Vec3 position = mc.player.position();
         boolean changedWorld = lastLevel != null && lastLevel != mc.level;
         boolean changedDimension = lastDimension != null && !dimension.equals(lastDimension);
-        boolean enteredCustom = CUSTOM_DIMENSION.equals(dimension) && lastDimension != null && !CUSTOM_DIMENSION.equals(
+        boolean enteredCustom = isCustomDimension(dimension) && lastDimension != null && !isCustomDimension(
             lastDimension);
         boolean positionJump = lastPosition != null && position.distanceToSqr(lastPosition) > 64 * 64;
 
@@ -338,8 +343,8 @@ public final class TowerSession {
                     : "排隊 Bossbar 消失，等待準備訊息或傳送確認");
             }
 
-            boolean teleportConfirmed = CUSTOM_DIMENSION.equals(dimension) && (enteredCustom || changedWorld
-                || positionJump || teleportPacketSeen);
+            boolean teleportConfirmed = isCustomDimension(dimension) && (enteredCustom || changedWorld || positionJump
+                || teleportPacketSeen);
             if (teleportConfirmed && (phase == Phase.READY || trackedBar == null)) {
                 phase = Phase.ACTIVE;
                 vanishedAt = -1;
@@ -349,15 +354,15 @@ public final class TowerSession {
                 floorEpoch++;
                 lastFloorSignal = 0;
                 floorBossbarVisible = false;
-                CatbudAddonsClient.LOGGER.debug("已傳送至 minecraft:custom，任務開始");
+                CatbudAddonsClient.LOGGER.debug("已傳送至 {}，任務開始", dimension);
             } else if (vanishedAt >= 0 && System.currentTimeMillis() - vanishedAt >= (phase == Phase.READY
                 ? READY_VANISH_GRACE_MS
                 : VANISH_GRACE_MS)) {
                 cancel("Bossbar 消失後未確認傳送");
             }
         } else if (phase == Phase.ACTIVE) {
-            if (!CUSTOM_DIMENSION.equals(dimension)) {
-                cancel("離開 minecraft:custom");
+            if (!isCustomDimension(dimension)) {
+                cancel("離開副本世界");
             } else {
                 targets.tick(mc.level, mc.player.blockPosition(), mc.options.getEffectiveRenderDistance());
             }

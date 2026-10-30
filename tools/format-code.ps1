@@ -1,4 +1,4 @@
-param([switch]$Check)
+param([switch]$Check, [string[]]$JavaPaths)
 
 $ErrorActionPreference = 'Stop'
 $workspacePath = Split-Path $PSScriptRoot -Parent
@@ -9,10 +9,19 @@ try {
     } else {
         (Get-Command java).Source
     }
-    $javaSources = @(rg --files projects -g '*.java' -g '!**/build/**')
-    if ($LASTEXITCODE -ne 0) { throw 'Cannot enumerate Java sources.' }
-    $javaSources += @(rg --files tools -g '*.java' -g '!**/build/**')
-    if ($LASTEXITCODE -ne 0) { throw 'Cannot enumerate Java formatting tools.' }
+    if ($JavaPaths) {
+        $javaSources = $JavaPaths
+        foreach ($source in $javaSources) {
+            if (-not $source.EndsWith('.java') -or -not (Test-Path -LiteralPath $source -PathType Leaf)) {
+                throw "Not a Java source file: $source"
+            }
+        }
+    } else {
+        $javaSources = @(rg --files projects -g '*.java' -g '!**/build/**')
+        if ($LASTEXITCODE -ne 0) { throw 'Cannot enumerate Java sources.' }
+        $javaSources += @(rg --files tools -g '*.java' -g '!**/build/**')
+        if ($LASTEXITCODE -ne 0) { throw 'Cannot enumerate Java formatting tools.' }
+    }
     $readabilityOptions = @()
     if ($Check) {
         $readabilityOptions += '--check'
@@ -23,8 +32,15 @@ try {
     if ($Check) {
         $formatOptions += '-PcheckFormat'
     }
+    if ($JavaPaths) {
+        $formatOptions += "-PformatPaths=$($JavaPaths -join ',')"
+    }
     & (Join-Path $workspacePath 'gradlew.bat') @formatOptions
     if ($LASTEXITCODE -ne 0) { throw 'Java formatting check failed.' }
+
+    if ($JavaPaths) {
+        return
+    }
 
     if (-not (Test-Path -LiteralPath 'node_modules/prettier')) {
         npm ci --ignore-scripts

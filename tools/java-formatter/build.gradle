@@ -40,5 +40,8 @@ tasks.register('formatJava', JavaExec) {
         include '**/*.java'
         exclude '**/build/**'
     }
-    args sources.files.sort { it.absolutePath }.collect { workspace.toPath().relativize(it.toPath()).toString() }
+    def selected = project.hasProperty('formatPaths')
+            ? project.property('formatPaths').split(',').collect { new File(workspace, it) }
+            : sources.files
+    args selected.sort { it.absolutePath }.collect { workspace.toPath().relativize(it.toPath()).toString() }
 }

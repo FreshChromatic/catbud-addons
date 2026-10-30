@@ -13,14 +13,14 @@ tasks.register('build') {
     group = 'build'
     description = 'Build all modules for every supported Minecraft version.'
     dependsOn ':update-engine:test'
-    dependsOn(['catbud_core', 'magic_tower', 'public_warps', 'monster_wave'].collectMany { module ->
+    dependsOn(['catbud_core', 'magic_tower', 'public_warps', 'monster_wave', 'island_assistive'].collectMany { module ->
         ['1.21.11', '26.1.2', '26.2', '26.3'].collect { mc -> ":projects:${module}:${mc}:build" }
     })
 }
 tasks.register('assemble') {
     group = 'build'
     description = 'Compile and package all versions without running tests.'
-    dependsOn(['catbud_core', 'magic_tower', 'public_warps', 'monster_wave'].collectMany { module ->
+    dependsOn(['catbud_core', 'magic_tower', 'public_warps', 'monster_wave', 'island_assistive'].collectMany { module ->
         ['1.21.11', '26.1.2', '26.2', '26.3'].collect { mc -> ":projects:${module}:${mc}:assemble" }
     })
 }

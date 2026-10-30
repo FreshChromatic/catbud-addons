@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "id": "catbud_island_mining_verification",
+  "version": "1.0.0",
+  "name": "Island Mining Verification",
+  "environment": "client",
+  "entrypoints": {
+    "client": ["github.freshchromatic.catbud_addons.island_assistive.BlockMiningVerificationClient"]
+  },
+  "depends": {"catbud_island_assistive": "*", "catbud_core": "*"}
+}

@@ -35,7 +35,8 @@ final class MonsterWaveSession {
 
     private record ResumeCandidate(ConnectionIdentity connection, UUID previousRunId, long disconnectedNanos) {}
 
-    private static final String TARGET_DIMENSION = "minecraft:custom";
+    private static final String TARGET_DIMENSION        = "world:custom";
+    private static final String LEGACY_TARGET_DIMENSION = "minecraft:custom";
 
     private final RunClock            clock;
     private final RunFactory          runs;
@@ -117,7 +118,7 @@ final class MonsterWaveSession {
 
     private void rememberActiveRun() {
         if (run != null && active() && connectionIdentity != null && previous != null && previous.multiplayer()
-            && TARGET_DIMENSION.equals(previous.dimension())) {
+            && isCustomDimension(previous.dimension())) {
             resumeCandidate = new ResumeCandidate(connectionIdentity, run.id(), clock.nanoTime());
         }
     }
@@ -128,8 +129,8 @@ final class MonsterWaveSession {
         }
         var candidate = resumeCandidate;
         resumeCandidate = null;
-        if (mode != Mode.AUTO || !now.multiplayer() || !TARGET_DIMENSION.equals(now.dimension()) || !candidate
-            .connection().equals(connectionIdentity)) {
+        if (mode != Mode.AUTO || !now.multiplayer() || !isCustomDimension(now.dimension()) || !candidate.connection()
+            .equals(connectionIdentity)) {
             return;
         }
         start();
@@ -252,7 +253,7 @@ final class MonsterWaveSession {
         boolean changedWorld = previous != null && previous.world() != now.world();
         boolean changedDimension = previous != null && !previous.dimension().equals(now.dimension());
         boolean positionJump = previous != null && distanceSquared(previous, now) > 64 * 64;
-        boolean enteredCustom = changedDimension && TARGET_DIMENSION.equals(now.dimension());
+        boolean enteredCustom = changedDimension && isCustomDimension(now.dimension());
         if (changedWorld || changedDimension || positionJump) {
             event("world", new RunEvent.World(now.dimension(), changedWorld, changedDimension, positionJump));
         }
@@ -268,7 +269,7 @@ final class MonsterWaveSession {
             }
             if (phase == Phase.QUEUED || phase == Phase.READY) {
                 updateWaiting(now, enteredCustom || changedWorld || positionJump || teleportSeen);
-            } else if (phase == Phase.ACTIVE && !TARGET_DIMENSION.equals(now.dimension())) {
+            } else if (phase == Phase.ACTIVE && !isCustomDimension(now.dimension())) {
                 end(EndReason.LEFT_TARGET_WORLD);
             }
         }
@@ -291,13 +292,17 @@ final class MonsterWaveSession {
         } else if (vanishedNanos == null) {
             vanishedNanos = clock.nanoTime();
         }
-        boolean confirmed = TARGET_DIMENSION.equals(now.dimension()) && teleportEvidence;
+        boolean confirmed = isCustomDimension(now.dimension()) && teleportEvidence;
         if (confirmed && (phase == Phase.READY || !tracked)) {
             activate();
         } else if (vanishedNanos != null && clock.nanoTime() - vanishedNanos >= (phase == Phase.READY ? 15_000_000_000L
             : 3_000_000_000L)) {
             end(EndReason.QUEUE_CANCELLED);
         }
+    }
+
+    private static boolean isCustomDimension(String dimension) {
+        return TARGET_DIMENSION.equals(dimension) || LEGACY_TARGET_DIMENSION.equals(dimension);
     }
 
     private static double distanceSquared(Observation a, Observation b) {

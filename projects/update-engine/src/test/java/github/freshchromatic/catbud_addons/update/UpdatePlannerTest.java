@@ -32,7 +32,7 @@ class UpdatePlannerTest {
                 .file()));
         }
         var inventory = InstalledAddonInventory.scan(mods, List.of("catbud_core", "catbud_addons",
-            "catbud_public_warps", "catbud_monster_wave"));
+            "catbud_public_warps", "catbud_monster_wave", "catbud_island_assistive"));
         var revised = revision(original, 2);
         var plan = UpdatePlanner.plan(revised, inventory, "26.2", "0.19.5", 25);
         assertEquals("v1.0.4-r2", plan.releaseId());
@@ -43,7 +43,7 @@ class UpdatePlannerTest {
         Path core = mods.resolve("catbud-core-26.2-1.0.4.jar");
         Files.move(core, mods.resolve("catbud-core-26.2-1.0.4-r3.jar"));
         var newer = InstalledAddonInventory.scan(mods, List.of("catbud_core", "catbud_addons", "catbud_public_warps",
-            "catbud_monster_wave"));
+            "catbud_monster_wave", "catbud_island_assistive"));
         assertThrows(IllegalArgumentException.class, () -> UpdatePlanner.plan(revised, newer, "26.2", "0.19.5", 25));
         assertThrows(IllegalArgumentException.class, () -> UpdatePlanner.plan(revision(original, 3), newer, "26.2",
             "0.19.5", 25));
@@ -82,8 +82,9 @@ class UpdatePlannerTest {
     @Test
     void plansEachSupportedInstallationTopologyWithoutAddingModules() throws Exception {
         var combinations = List.of(List.of(AddonModule.CORE), List.of(AddonModule.MAGIC_TOWER), List.of(
-            AddonModule.MAGIC_TOWER, AddonModule.PUBLIC_WARPS), List.of(AddonModule.CORE, AddonModule.MAGIC_TOWER,
-                AddonModule.PUBLIC_WARPS, AddonModule.MONSTER_WAVE));
+            AddonModule.ISLAND_ASSISTIVE), List.of(AddonModule.MAGIC_TOWER, AddonModule.PUBLIC_WARPS), List.of(
+                AddonModule.CORE, AddonModule.MAGIC_TOWER, AddonModule.PUBLIC_WARPS, AddonModule.MONSTER_WAVE,
+                AddonModule.ISLAND_ASSISTIVE));
         int index = 0;
         for (var modules : combinations) {
             Path mods = Files.createDirectory(temporary.resolve("mods" + index++));

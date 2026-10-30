@@ -1,0 +1,7 @@
+{
+  "required": true,
+  "package": "github.freshchromatic.catbud_addons.island_assistive.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "client": ["MiningInputMixin", "MiningProgressMixin", "MiningMovementAccessor", "MiningMovementMixin", "MiningMouseInputMixin", "TweakerooCameraMixin"],
+  "injectors": {"defaultRequire": 1}
+}

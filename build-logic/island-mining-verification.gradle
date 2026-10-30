@@ -1,0 +1,60 @@
+sourceSets {
+    miningVerification {
+        java.srcDirs = [file('../../shared/src/miningVerification/java'), file('src/verification/java')]
+        resources.srcDir file('../../shared/src/miningVerification/resources')
+        compileClasspath += sourceSets.main.output + sourceSets.main.compileClasspath
+        runtimeClasspath += sourceSets.main.output + sourceSets.main.runtimeClasspath
+    }
+}
+configurations.miningVerificationImplementation.extendsFrom(configurations.implementation)
+configurations.miningVerificationRuntimeOnly.extendsFrom(configurations.runtimeOnly)
+if (project.hasProperty('tweakerooTestMods')) {
+    dependencies {
+        miningVerificationRuntimeOnly fileTree(project.property('tweakerooTestMods')) {
+            include 'tweakeroo-fabric-26.2-*.jar', 'malilib-fabric-26.2-*.jar'
+        }
+    }
+}
+def miningMapName = "island-mining-map-${System.currentTimeMillis()}"
+if (project.hasProperty('miningMap')) {
+    tasks.register('prepareMiningMap') {
+        doLast {
+            def original = file(project.property('miningMap'))
+            if (!new File(original, 'level.dat').isFile()) {
+                throw new GradleException('Mining map must contain level.dat')
+            }
+            copy {
+                from original
+                into layout.buildDirectory.dir("verification-island-mining/saves/${miningMapName}")
+                exclude 'session.lock'
+            }
+        }
+    }
+}
+loom {
+    mods {
+        catbud_island_assistive { sourceSet sourceSets.main }
+        catbud_island_mining_verification { sourceSet sourceSets.miningVerification }
+    }
+    runs {
+        client {
+            source sourceSets.miningVerification
+            runDir 'build/verification-island-mining'
+            if (project.hasProperty('tweakerooTestMods')) {
+                vmArg '-Dcatbud.verifyFreeCamera=true'
+            }
+            if (project.hasProperty('miningMap')) {
+                vmArg "-Dcatbud.miningWorld=${miningMapName}"
+            }
+            if (project.hasProperty('autoClickerReference')) {
+                vmArg "-Dcatbud.autoClickerReference=${project.property('autoClickerReference')}"
+            }
+        }
+    }
+}
+tasks.named('runClient') {
+    dependsOn tasks.named('miningVerificationClasses')
+    if (project.hasProperty('miningMap')) {
+        dependsOn tasks.named('prepareMiningMap')
+    }
+}

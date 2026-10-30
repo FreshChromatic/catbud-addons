@@ -107,8 +107,7 @@ class RunRecorderTest {
         var clock = new MonsterWaveSessionTest.Clock();
         int[] disconnects = { 0 };
         var session = new MonsterWaveSession(clock, mode -> run(recorder, clock), () -> disconnects[0]++);
-        session.forceStart(new MonsterWaveSession.Observation(true, true, new Object(), "minecraft:custom", 0, 0, 0,
-            3));
+        session.forceStart(new MonsterWaveSession.Observation(true, true, new Object(), "world:custom", 0, 0, 0, 3));
         assertEquals(1, disconnects[0]);
         assertEquals(RunEvent.EndReason.LOW_HEALTH, session.lastSummary().reason());
     }

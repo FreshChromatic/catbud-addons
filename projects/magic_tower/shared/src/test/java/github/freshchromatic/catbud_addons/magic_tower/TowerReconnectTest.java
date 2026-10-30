@@ -11,6 +11,8 @@ import net.minecraft.world.level.block.Blocks;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.Map;
 import java.util.OptionalInt;
@@ -19,7 +21,7 @@ import java.util.UUID;
 
 class TowerReconnectTest {
 
-    private static final Identifier CUSTOM = Identifier.fromNamespaceAndPath("minecraft", "custom");
+    private static final Identifier CUSTOM = Identifier.fromNamespaceAndPath("world", "custom");
     private static final UUID       PLAYER = UUID.randomUUID();
 
     @BeforeAll
@@ -53,12 +55,15 @@ class TowerReconnectTest {
         assertTrue(session.targets().lineTargets().contains(chest));
     }
 
-    @Test
-    void restoresForcedMode() throws Exception {
+    @ParameterizedTest
+    @ValueSource(strings = { "world", "minecraft" })
+    void restoresForcedMode(String namespace) throws Exception {
         TowerSession session = activeSession(true);
+        Identifier dimension = Identifier.fromNamespaceAndPath(namespace, "custom");
+        setField(session, "lastDimension", dimension);
         session.disconnect();
         session.joinConnection();
-        session.updateConnection("tower.example", PLAYER, CUSTOM);
+        session.updateConnection("tower.example", PLAYER, dimension);
         assertTrue(session.isActive());
         assertEquals("forced", session.modeKey());
         assertEquals(OptionalInt.of(12), session.floor());
@@ -67,6 +72,7 @@ class TowerReconnectTest {
     @Test
     void discardsStateWhenLoginIsOutsideCustom() throws Exception {
         assertDiscarded("tower.example", PLAYER, Identifier.fromNamespaceAndPath("minecraft", "overworld"));
+        assertDiscarded("tower.example", PLAYER, Identifier.fromNamespaceAndPath("unrelated", "custom"));
     }
 
     @Test

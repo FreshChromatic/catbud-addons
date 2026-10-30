@@ -98,7 +98,7 @@ class MonsterWaveSessionTest {
         queued();
         session.bossbars().name(queue, value("ready").name(), Signal.READY);
         session.teleport("position_packet");
-        session.tick(observation(arena, "minecraft:custom", health));
+        session.tick(observation(arena, "world:custom", health));
     }
 
     @Test
@@ -108,7 +108,7 @@ class MonsterWaveSessionTest {
         session.bossbars().name(queue, value("ready").name(), Signal.READY);
         clock.advance(500);
         session.teleport("position_packet");
-        session.tick(observation(arena, "minecraft:custom", 20));
+        session.tick(observation(arena, "world:custom", 20));
         assertTrue(session.active());
         clock.advance(2500);
         session.tick(observation(lobby, "minecraft:overworld", 2));
@@ -126,9 +126,9 @@ class MonsterWaveSessionTest {
         active(health);
         assertEquals(1, disconnected);
         assertEquals(EndReason.LOW_HEALTH, session.lastSummary().reason());
-        session.tick(observation(arena, "minecraft:custom", health));
+        session.tick(observation(arena, "world:custom", health));
         session.bossbars().name(queue, value("queue again").name(), Signal.QUEUE);
-        assertFalse(session.forceStart(observation(arena, "minecraft:custom", health)));
+        assertFalse(session.forceStart(observation(arena, "world:custom", health)));
         session.connectionReset();
         assertEquals(1, disconnected);
         assertEquals(1, sinks.size());
@@ -139,7 +139,7 @@ class MonsterWaveSessionTest {
     void exactThresholdIsAllowedUntilNextHealthUpdate() {
         active(4);
         assertEquals(0, disconnected);
-        session.tick(observation(arena, "minecraft:custom", 3.5F));
+        session.tick(observation(arena, "world:custom", 3.5F));
         assertEquals(1, disconnected);
     }
 
@@ -148,10 +148,10 @@ class MonsterWaveSessionTest {
         queued();
         session.tick(observation(lobby, "minecraft:overworld", 1));
         session.bossbars().name(queue, value("start").name(), Signal.READY_START);
-        session.tick(observation(lobby, "minecraft:custom", 1));
+        session.tick(observation(lobby, "world:custom", 1));
         assertEquals(Phase.QUEUED, session.phase());
         session.bossbars().name(queue, value("ready").name(), Signal.READY);
-        session.tick(observation(lobby, "minecraft:custom", 1));
+        session.tick(observation(lobby, "world:custom", 1));
         assertEquals(Phase.READY, session.phase());
         assertEquals(0, disconnected);
     }
@@ -161,7 +161,7 @@ class MonsterWaveSessionTest {
         session.bossbars().add(UUID.randomUUID(), value("tower queue"), Signal.NONE);
         session.bossbars().add(UUID.randomUUID(), value("ready"), Signal.READY);
         session.teleport("position_packet");
-        session.tick(observation(arena, "minecraft:custom", 1));
+        session.tick(observation(arena, "world:custom", 1));
         assertEquals(Phase.IDLE, session.phase());
         assertTrue(sinks.isEmpty());
         assertEquals(0, disconnected);
@@ -171,10 +171,10 @@ class MonsterWaveSessionTest {
     void missingReadyCanActivateAfterQueueDisappearsAndEarlierTeleport() {
         queued();
         session.teleport("respawn_packet");
-        session.tick(observation(arena, "minecraft:custom", 20));
+        session.tick(observation(arena, "world:custom", 20));
         assertEquals(Phase.QUEUED, session.phase());
         session.bossbars().remove(queue);
-        session.tick(observation(arena, "minecraft:custom", 20));
+        session.tick(observation(arena, "world:custom", 20));
         assertTrue(session.active());
     }
 
@@ -189,7 +189,7 @@ class MonsterWaveSessionTest {
         session.bossbars().add(replacement, value("ready2"), Signal.READY);
         session.tick(new Observation(true, true, null, "", 0, 0, 0, Float.NaN));
         clock.advance(20_000);
-        session.tick(observation(arena, "minecraft:custom", 20));
+        session.tick(observation(arena, "world:custom", 20));
         assertTrue(session.active());
         assertEquals(1, sinks.size());
     }
@@ -228,10 +228,10 @@ class MonsterWaveSessionTest {
         active(4);
         session.bossbars().name(queue, value("exit").name(), Signal.READY_EXIT);
         session.bossbars().remove(queue);
-        session.tick(observation(new Object(), "minecraft:custom", 4));
+        session.tick(observation(new Object(), "world:custom", 4));
         assertTrue(session.active());
         clock.advance(24 * 60 * 60 * 1000L);
-        session.tick(observation(arena, "minecraft:custom", 3));
+        session.tick(observation(arena, "world:custom", 3));
         assertEquals(1, disconnected);
         assertEquals(EndReason.LOW_HEALTH, session.lastSummary().reason());
     }
@@ -251,13 +251,13 @@ class MonsterWaveSessionTest {
         active(20);
         session.forceStop();
         assertEquals(EndReason.MANUAL_STOP, session.lastSummary().reason());
-        session.tick(observation(arena, "minecraft:custom", 1));
+        session.tick(observation(arena, "world:custom", 1));
         assertFalse(session.active());
         session.useAuto();
-        session.forceStart(observation(arena, "minecraft:custom", 20));
+        session.forceStart(observation(arena, "world:custom", 20));
         session.enabled(false);
         assertEquals(EndReason.DISABLED, session.lastSummary().reason());
-        assertFalse(session.forceStart(observation(arena, "minecraft:custom", 1)));
+        assertFalse(session.forceStart(observation(arena, "world:custom", 1)));
         assertEquals(0, disconnected);
     }
 
@@ -272,7 +272,7 @@ class MonsterWaveSessionTest {
     @Test
     void singleplayerAndMissingPlayerNeverDisconnect() {
         active(20);
-        session.tick(new Observation(true, false, arena, "minecraft:custom", 0, 0, 0, 1));
+        session.tick(new Observation(true, false, arena, "world:custom", 0, 0, 0, 1));
         session.tick(new Observation(true, true, null, "", 0, 0, 0, Float.NaN));
         assertEquals(0, disconnected);
         assertTrue(session.active());
@@ -306,7 +306,7 @@ class MonsterWaveSessionTest {
         session.connectionReset();
         clock.advance(12_000);
         session.connectionJoined(SERVER);
-        session.tick(observation(new Object(), "minecraft:custom", 4));
+        session.tick(observation(new Object(), "world:custom", 4));
         assertTrue(session.active());
         assertFalse(session.awaitingResume());
         assertEquals(Mode.AUTO, session.mode());
@@ -318,9 +318,37 @@ class MonsterWaveSessionTest {
         assertEquals(previousId, data.previousRunId());
         assertEquals(12_000, data.disconnectedDurationMs());
         assertNotEquals(previousId, resumed.runId());
-        session.tick(observation(arena, "minecraft:custom", 3.5F));
+        session.tick(observation(arena, "world:custom", 3.5F));
         assertEquals(2, disconnected);
         assertEquals(EndReason.LOW_HEALTH, session.lastSummary().reason());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = { "world:custom", "minecraft:custom" })
+    void customNamespacesActivateAndResumeProtection(String dimension) {
+        queued();
+        session.bossbars().name(queue, value("ready").name(), Signal.READY);
+        session.tick(observation(arena, dimension, 20));
+        assertTrue(session.active());
+        session.connectionReset();
+        assertTrue(session.awaitingResume());
+        session.connectionJoined(SERVER);
+        session.tick(observation(new Object(), dimension, 20));
+        assertTrue(session.active());
+        session.tick(observation(arena, dimension, 3));
+        assertEquals(1, disconnected);
+        assertEquals(EndReason.LOW_HEALTH, session.lastSummary().reason());
+    }
+
+    @Test
+    void unrelatedCustomNamespaceCannotResumeProtection() {
+        active(20);
+        session.connectionReset();
+        session.connectionJoined(SERVER);
+        session.tick(observation(arena, "unrelated:custom", 1));
+        assertFalse(session.active());
+        assertFalse(session.awaitingResume());
+        assertEquals(0, disconnected);
     }
 
     @Test
@@ -336,7 +364,7 @@ class MonsterWaveSessionTest {
         session.tick(new Observation(true, true, null, "", 0, 0, 0, Float.NaN));
         assertTrue(session.awaitingResume());
         assertFalse(session.active());
-        session.tick(observation(new Object(), "minecraft:custom", 20));
+        session.tick(observation(new Object(), "world:custom", 20));
         assertTrue(session.active());
         assertEquals(2, sinks.size());
     }
@@ -348,7 +376,7 @@ class MonsterWaveSessionTest {
         session.tick(observation(lobby, "minecraft:overworld", 1));
         assertFalse(session.active());
         assertFalse(session.awaitingResume());
-        session.tick(observation(arena, "minecraft:custom", 1));
+        session.tick(observation(arena, "world:custom", 1));
         assertFalse(session.active());
         assertEquals(1, disconnected);
         assertEquals(1, sinks.size());
@@ -361,7 +389,7 @@ class MonsterWaveSessionTest {
         var other = changeServer ? new ConnectionIdentity("other.example", SERVER.player())
             : new ConnectionIdentity(SERVER.server(), new UUID(0, 2));
         session.connectionJoined(other);
-        session.tick(observation(arena, "minecraft:custom", 1));
+        session.tick(observation(arena, "world:custom", 1));
         assertFalse(session.active());
         assertFalse(session.awaitingResume());
         assertEquals(1, sinks.size());
@@ -371,7 +399,7 @@ class MonsterWaveSessionTest {
     @Test
     void joiningCustomWithoutEarlierActiveRunDoesNotResume() {
         session.connectionJoined(SERVER);
-        session.tick(observation(arena, "minecraft:custom", 1));
+        session.tick(observation(arena, "world:custom", 1));
         assertFalse(session.active());
         assertTrue(sinks.isEmpty());
         assertEquals(0, disconnected);
@@ -391,7 +419,7 @@ class MonsterWaveSessionTest {
         }
         assertFalse(session.awaitingResume());
         session.connectionJoined(SERVER);
-        session.tick(observation(arena, "minecraft:custom", 1));
+        session.tick(observation(arena, "world:custom", 1));
         assertFalse(session.active());
         assertEquals(1, disconnected);
     }
@@ -402,8 +430,8 @@ class MonsterWaveSessionTest {
         for (int rejoin = 0; rejoin < 3; rejoin++) {
             session.connectionReset();
             session.connectionJoined(SERVER);
-            session.tick(observation(new Object(), "minecraft:custom", 3));
-            session.tick(observation(arena, "minecraft:custom", 3));
+            session.tick(observation(new Object(), "world:custom", 3));
+            session.tick(observation(arena, "world:custom", 3));
             assertEquals(rejoin + 2, disconnected);
         }
         assertEquals(4, sinks.size());
@@ -415,7 +443,7 @@ class MonsterWaveSessionTest {
         queued();
         session.connectionReset();
         session.connectionJoined(SERVER);
-        session.tick(observation(arena, "minecraft:custom", 1));
+        session.tick(observation(arena, "world:custom", 1));
         assertFalse(session.active());
         assertFalse(session.awaitingResume());
         assertEquals(0, disconnected);
@@ -427,7 +455,7 @@ class MonsterWaveSessionTest {
         session.tick(observation(lobby, "minecraft:overworld", 20));
         session.connectionReset();
         session.connectionJoined(SERVER);
-        session.tick(observation(arena, "minecraft:custom", 1));
+        session.tick(observation(arena, "world:custom", 1));
         assertFalse(session.active());
         assertFalse(session.awaitingResume());
         assertEquals(0, disconnected);
@@ -436,15 +464,15 @@ class MonsterWaveSessionTest {
     @Test
     void forcedCustomRunResumesAsAutomaticAndSingleplayerClearsCandidate() {
         session.connectionJoined(SERVER);
-        session.forceStart(observation(arena, "minecraft:custom", 20));
+        session.forceStart(observation(arena, "world:custom", 20));
         session.connectionReset();
         session.connectionJoined(SERVER);
-        session.tick(observation(arena, "minecraft:custom", 20));
+        session.tick(observation(arena, "world:custom", 20));
         assertTrue(session.active());
         assertEquals(Mode.AUTO, session.mode());
         session.connectionReset();
         session.connectionJoined(null);
-        session.tick(new Observation(true, false, arena, "minecraft:custom", 0, 0, 0, 1));
+        session.tick(new Observation(true, false, arena, "world:custom", 0, 0, 0, 1));
         assertFalse(session.active());
         assertFalse(session.awaitingResume());
         assertEquals(0, disconnected);
@@ -454,10 +482,10 @@ class MonsterWaveSessionTest {
     void burstRiskRecordsAssessmentAndKeepsReconnectRecovery() {
         active(20);
         clock.advance(200);
-        session.tick(observation(arena, "minecraft:custom", 14));
+        session.tick(observation(arena, "world:custom", 14));
         assertTrue(session.active());
         clock.advance(200);
-        session.tick(observation(arena, "minecraft:custom", 8));
+        session.tick(observation(arena, "world:custom", 8));
         assertEquals(1, disconnected);
         assertEquals(EndReason.BURST_RISK, session.lastSummary().reason());
         assertTrue(session.awaitingResume());
@@ -465,7 +493,7 @@ class MonsterWaveSessionTest {
             .orElseThrow();
         assertEquals(12, ((RunEvent.HealthRisk) event.data()).predictedLoss());
         session.connectionJoined(SERVER);
-        session.tick(observation(new Object(), "minecraft:custom", 8));
+        session.tick(observation(new Object(), "world:custom", 8));
         assertTrue(session.active());
         assertEquals(0, session.healthRisk().predictedLoss());
     }
