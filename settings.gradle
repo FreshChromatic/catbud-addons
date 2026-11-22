@@ -7,12 +7,6 @@ pluginManagement {
 rootProject.name = 'catbud-addons'
 include 'update-engine'
 project(':update-engine').projectDir = file('projects/update-engine')
-['protocol', 'paper', '26.2', '26.3'].each { part ->
-    include ":projects:mining_capture:${part}"
-    project(":projects:mining_capture:${part}").projectDir = file("projects/mining_capture/${part}")
-}
-include ':projects:mining_capture:study-paper'
-project(':projects:mining_capture:study-paper').projectDir = file('projects/mining_capture/study-paper')
 ['catbud_core', 'magic_tower', 'public_warps', 'monster_wave', 'island_assistive'].each { module ->
     ['1.21.11', '26.1.2', '26.2', '26.3'].each { mc ->
         def path = ":projects:${module}:${mc}"
