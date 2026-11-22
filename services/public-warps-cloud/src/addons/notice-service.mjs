@@ -41,7 +41,7 @@ export function noticeContent(value, now) {
       url.password ||
       url.port ||
       value.link.length > 1024 ||
-      !['github.com', 'catbud.net', 'catrealm.net', 'api.cbwp.workers.dev'].includes(url.hostname)
+      !['github.com', 'catbud.net', 'catrealm.net', 'catnip-api.freshcc.workers.dev'].includes(url.hostname)
     ) {
       throw new ApiError(400, 'Announcement link is not an approved HTTPS destination');
     }

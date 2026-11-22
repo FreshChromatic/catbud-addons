@@ -29,6 +29,9 @@ libraries/paper-server
 **/.local-state/
 **/logs/
 **/crash-reports/
+**/__pycache__/
+*.pyc
+*.pyo
 hs_err_pid*.log
 replay_pid*.log
 *.iml

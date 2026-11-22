@@ -1,5 +1,5 @@
 {
-  "name": "api",
+  "name": "catnip-api",
   "main": "src/worker.mjs",
   "compatibility_date": "2026-10-11",
   "compatibility_flags": ["nodejs_compat"],

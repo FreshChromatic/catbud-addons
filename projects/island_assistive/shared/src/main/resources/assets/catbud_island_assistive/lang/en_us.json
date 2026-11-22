@@ -54,6 +54,8 @@
   "setting.island_assistive.miningMovement.description": "Move locally on supported ground only when needed.",
   "setting.island_assistive.miningRadius": "Movement radius",
   "setting.island_assistive.miningRadius.description": "Maximum distance in blocks from the starting position.",
+  "setting.island_assistive.miningVariedMotion": "Varied turning (VARIED)",
+  "setting.island_assistive.miningVariedMotion.description": "Uses the current block and human timing to choose aim movements at 180 degrees per second. Changing mode stops mining; turn this off to customize the original turning speed.",
   "setting.island_assistive.miningTurnSpeed": "Turning speed",
   "setting.island_assistive.miningTurnSpeed.description": "Maximum degrees per second; slows near the aim point.",
   "setting.island_assistive.miningCooldown": "Wait for attack cooldown before starting",

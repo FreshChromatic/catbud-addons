@@ -2,6 +2,8 @@ package github.freshchromatic.catbud_addons.island_assistive;
 
 import github.freshchromatic.catbud_addons.catbud_core.ClientPlatform;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.KeyMapping;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.InteractionResult;
@@ -65,6 +67,13 @@ public final class BlockMiningSession {
 
     public void interruptions(MiningInterruptionPolicy policy) {
         interruptions = policy;
+    }
+
+    public void turnMode(MiningTurnMode mode) {
+        if (control.mode() != mode) {
+            stop();
+            control.mode(mode);
+        }
     }
 
     public State state() {
@@ -166,7 +175,7 @@ public final class BlockMiningSession {
             return;
         }
         anchor = client.player.position();
-        control.begin();
+        control.begin(target);
         replans = 0;
         noticeTicks = 0;
         state = State.WAITING;
@@ -295,7 +304,7 @@ public final class BlockMiningSession {
             return false;
         }
         if (state == State.SUSPENDED) {
-            control.begin();
+            control.begin(targetPos());
             state = State.WAITING;
             reason = "waiting";
         }
@@ -450,9 +459,30 @@ public final class BlockMiningSession {
     }
 
     public void manualScroll() {
+        takeManualControl();
+    }
+
+    public void takeManualControl() {
         if (running() && ClientPlatform.screen(client) == null && client.isWindowActive() && client.mouseHandler
             .isMouseGrabbed() && client.getCameraEntity() == client.player) {
             pause("manual");
+        }
+    }
+
+    public void manualKey(KeyEvent key) {
+        var options = client.options;
+        for (var binding : new KeyMapping[] { options.keyUp, options.keyDown, options.keyLeft, options.keyRight,
+            options.keyJump, options.keyShift }) {
+            if (binding.matches(key)) {
+                takeManualControl();
+                return;
+            }
+        }
+        for (var binding : options.keyHotbarSlots) {
+            if (binding.matches(key)) {
+                takeManualControl();
+                return;
+            }
         }
     }
 

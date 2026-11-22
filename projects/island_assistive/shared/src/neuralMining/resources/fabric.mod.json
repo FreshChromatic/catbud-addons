@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "id": "catbud_neural_mining",
+  "version": "0.1.0",
+  "name": "Catbud Neural Mining Research",
+  "environment": "client",
+  "entrypoints": {"client": ["github.freshchromatic.catbud_addons.island_assistive.NeuralMiningClient"]},
+  "mixins": ["neural-mining.mixins.json"],
+  "depends": {"fabricloader": ">=0.19.5", "minecraft": "26.3", "fabric-api": "*", "catbud_island_assistive": "1.0.3", "catbud_core": "1.0.2"},
+  "breaks": {"catbud_mining_capture": "*", "catbud_mining_study": "*"}
+}

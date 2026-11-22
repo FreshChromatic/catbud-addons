@@ -25,6 +25,11 @@ final class VerificationPlatform {
         }
         if (!creating) {
             creating = true;
+            String miningWorld = System.getProperty("catbud.miningWorld");
+            if (miningWorld != null) {
+                mc.createWorldOpenFlows().openWorld(miningWorld, () -> mc.setScreenAndShow(new TitleScreen()));
+                return false;
+            }
             mc.createWorldOpenFlows().createFreshLevel("island-assistive-" + System.currentTimeMillis(),
                 new LevelSettings("Island Assistive verification", GameType.CREATIVE,
                     LevelSettings.DifficultySettings.DEFAULT, true, WorldDataConfiguration.DEFAULT), new WorldOptions(

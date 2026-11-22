@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "id": "catbud_mining_study",
+  "version": "1.1.0",
+  "name": "Catbud Mining Motion Study",
+  "environment": "client",
+  "entrypoints": {"client": ["github.freshchromatic.catbud_addons.island_assistive.MiningStudyClient"]},
+  "mixins": ["mining-study.mixins.json"],
+  "depends": {"fabricloader": ">=0.19.5", "minecraft": "26.3", "fabric-api": "*", "catbud_island_assistive": "1.0.2", "catbud_core": "1.0.2"}
+}

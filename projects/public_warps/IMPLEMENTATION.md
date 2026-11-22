@@ -476,3 +476,29 @@ PreviewMotion 新增懸停循環：外觀 2.5 秒、內部 2.5 秒，各旋轉 3
 更新 control 的 ADMIN_ORIGIN 及私人來源設定；使用者已將既有 Access 應用 hostname 更新為 control.cbwp.workers.dev。匿名 / 與 /api/session 均確認 302 跳轉到原有 xirojiang.cloudflareaccess.com，API 的 catbud／catrealm 名單 200，分別 25／0 筆。這證明新域名資料讀取與登入入口保護，未將它描述為新域名的已登入編輯驗收。
 
 只建置四版 1.0.2，未重跑無關測試。使用者關閉遊戲後，備份 JAR 與完整連線設定，再替換 26.2 JAR／serviceUrl，保留其他設定、私人投稿者憑證與快取。安裝 hash 與 out 相同：B4895BA580C7B07E32D252042454F05D2941A67A184C08DC2B2B94773D2D990E。舊域名不再作為目前連線來源。
+
+## 2026-11-20 帳號子域改為 freshcc，Worker 改名 catnip-api／catnip-control（只改程式碼與文件，尚未部署）
+
+使用者在 Cloudflare 將帳號子域由 cbwp 改為 freshcc，並要求兩個 Worker 改名為 catnip-api、catnip-control。依 2026-10-13 的作法，只改 `wrangler.jsonc`／`wrangler.admin.jsonc` 的 `name`，沿用原 D1 ID、變數與限流設定。新來源為 https://catnip-api.freshcc.workers.dev，管理入口為 https://catnip-control.freshcc.workers.dev。同步修改：遊戲預設 serviceUrl（`PublicWarpsClient`）、更新引擎（`ReleaseHttpClient`、`InstallerMain`）、公告網址白名單（`NoticeScreen` 兩處、`notice-service.mjs`）、各 README 與 `ACCESS_SETUP.md`。歷史紀錄與備份保留原地址。
+
+**尚未部署，也沒有驗證。** 子域改名後，舊的 `api.cbwp.workers.dev` 與 `control.cbwp.workers.dev` 已經失效：目前仍是 `api` 與 `control` 這兩個舊名稱的 Worker 掛在 `*.freshcc.workers.dev`，所以此刻 `https://api.freshcc.workers.dev` 與 `https://control.freshcc.workers.dev` 才是可用網址。已發行或已安裝、寫死 `api.cbwp.workers.dev` 的用戶端（公共傳點、更新引擎、公告畫面）目前連不上，改名與重新建置不會救回它們，只能發新版或在 Cloudflare 把子域改回 cbwp。
+
+部署改名前必做：
+1. 以新名稱部署會建立**全新的 Worker**，secret 不會跟著過去。需要在新 Worker 重新設定 `ADMIN_CREDENTIAL`（catnip-api），以及 `ACCESS_ALLOWED_EMAILS`、`ACCESS_AUD`、`ACCESS_TEAM_DOMAIN`、`ADMIN_ORIGIN`、`CSRF_SECRET`（catnip-control）。值無法從 Cloudflare 讀回，要由持有者重新輸入；`ADMIN_ORIGIN` 要改成 https://catnip-control.freshcc.workers.dev。
+2. Cloudflare Access 應用的 public hostname 要改成 `catnip-control.freshcc.workers.dev`。
+3. 部署後兩邊同時存在：`api` 與 `control` 舊 Worker（含每分鐘的 Cron）會繼續跑，確認新 Worker 正常後再刪除舊的，避免重複的排程。
+4. D1 資料庫裡若存有帶舊網址的下載連結，需要另外檢查。
+
+### 2026-11-20 補記：catnip-api、catnip-control 已部署
+
+依使用者要求已部署兩個新名稱的 Worker，沿用原 D1（`catbud-public-warps`）、變數與限流設定：catnip-api 版本 73b4c5c3、catnip-control 版本 dd03db23（`wrangler deploy` 後者第一次在建立後的設定步驟出現 10007，數秒後重跑成功）。
+
+secret 由使用者本機的私人檔案（`.local-state/cloud/administrator.json`、`admin-secrets.json`）經 wrangler 標準輸入寫入，內容未輸出：catnip-api 設 `ADMIN_CREDENTIAL`；catnip-control 設 `ACCESS_ALLOWED_EMAILS`、`ACCESS_TEAM_DOMAIN`、`ACCESS_AUD`、`CSRF_SECRET`，並把 `ADMIN_ORIGIN` 改為 https://catnip-control.freshcc.workers.dev。部署前的私人檔案備份在 `.local-state/cloud/domain-backup-20261120/`；之後本機的 `deployment.json`、`admin-secrets.json`、`access-settings.json` 已把來源網址改成新的。
+
+驗證：`npm run cloud -- status` 以管理憑證連 catnip-api 成功，回傳既有資料庫用量（正常狀態）；未登入請求 catnip-control 回 401「Administrator login required」，與舊 control 相同。**沒有驗證**：Access 登入與登入後儲存（Access 應用的 hostname 還沒改，須由使用者在 Zero Trust 改為 `catnip-control.freshcc.workers.dev`，之後重新登入一次）、遊戲用戶端對新網址的實際連線（客戶端還沒重新建置發行）。
+
+舊的 `api`、`control` 兩個 Worker 仍在線上，且舊 `api` 的每分鐘排程與新 Worker 同時對同一個資料庫執行，確認新服務正常並完成 Access 登入驗收後再刪除舊的。
+
+### 2026-11-20 再補記：舊 api、control 已刪除
+
+確認 catnip-api 目錄與管理 status 正常、catnip-control 未登入已導向 Access 後，依使用者要求用 wrangler 刪除舊的 api 與 control 兩個 Worker（它們的 secret 隨之消失，原值仍在本機私人檔案與備份）。D1 資料庫不受影響。刪除 api 時指令回報「Worker 不存在」(10090)，但列出帳號 Worker 後只剩 catnip-api、catnip-control 與 scriptlink-hub，視為已刪。刪除後 catnip-api 目錄回 200、管理 status 正常。

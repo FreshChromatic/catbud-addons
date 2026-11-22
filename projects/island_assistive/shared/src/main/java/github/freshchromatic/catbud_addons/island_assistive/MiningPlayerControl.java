@@ -2,6 +2,7 @@ package github.freshchromatic.catbud_addons.island_assistive;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.KeyMapping;
+import net.minecraft.core.BlockPos;
 import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
 
@@ -14,9 +15,12 @@ import github.freshchromatic.catbud_addons.catbud_core.ClientPlatform;
 
 public final class MiningPlayerControl {
 
-    private final Minecraft        client;
-    private final Set<KeyMapping>  held   = new HashSet<>();
-    private final MiningLookMotion motion = new MiningLookMotion();
+    private final Minecraft           client;
+    private final Set<KeyMapping>     held   = new HashSet<>();
+    private final MiningLookMotion    motion = new MiningLookMotion();
+    private final MiningAimController varied;
+
+    private MiningTurnMode mode = MiningTurnMode.VARIED;
 
     private float   expectedYaw;
     private float   expectedPitch;
@@ -28,36 +32,43 @@ public final class MiningPlayerControl {
 
     public MiningPlayerControl(Minecraft client) {
         this.client = client;
+        varied = new MiningAimController(client);
     }
 
-    public void begin() {
+    public void begin(BlockPos target) {
         expectedYaw = client.player.getYRot();
         expectedPitch = client.player.getXRot();
         looking = true;
         lastFrame = 0;
+        varied.begin(target);
+    }
+
+    public MiningTurnMode mode() {
+        return mode;
+    }
+
+    public void mode(MiningTurnMode mode) {
+        this.mode = mode;
     }
 
     public void look(Vec3 point, double speed) {
         aimPoint = point;
         turnSpeed = speed;
+        varied.look(point, speed);
     }
 
     public void clearAim() {
         aimPoint = null;
         lastFrame = 0;
         motion.reset();
+        varied.clearAim();
     }
 
     public void frame(long now) {
-        double seconds = lastFrame == 0 ? 0 : Math.clamp((now - lastFrame) / 1_000_000_000.0, 0, 0.1);
-        lastFrame = now;
-        if (aimPoint == null || seconds == 0) {
+        var rotation = nextRotation(now);
+        if (rotation == null) {
             return;
         }
-        var delta = aimPoint.subtract(client.player.getEyePosition());
-        float yaw = (float) Math.toDegrees(Math.atan2(-delta.x, delta.z));
-        float pitch = (float) -Math.toDegrees(Math.atan2(delta.y, Math.hypot(delta.x, delta.z)));
-        var rotation = motion.advance(client.player.getYRot(), client.player.getXRot(), yaw, pitch, turnSpeed, seconds);
         expectedYaw = rotation.yaw();
         expectedPitch = rotation.pitch();
         client.player.setYRot(expectedYaw);
@@ -65,6 +76,24 @@ public final class MiningPlayerControl {
         client.player.yRotO = expectedYaw;
         client.player.xRotO = expectedPitch;
         looking = true;
+    }
+
+    private MiningLookMotion.Rotation nextRotation(long now) {
+        if (mode == MiningTurnMode.VARIED) {
+            var rotation = varied.frame(now);
+            if (rotation != null) {
+                return rotation;
+            }
+        }
+        double seconds = lastFrame == 0 ? 0 : Math.clamp((now - lastFrame) / 1_000_000_000.0, 0, 0.1);
+        lastFrame = now;
+        if (aimPoint == null || seconds == 0) {
+            return null;
+        }
+        var delta = aimPoint.subtract(client.player.getEyePosition());
+        float yaw = (float) Math.toDegrees(Math.atan2(-delta.x, delta.z));
+        float pitch = (float) -Math.toDegrees(Math.atan2(delta.y, Math.hypot(delta.x, delta.z)));
+        return motion.advance(client.player.getYRot(), client.player.getXRot(), yaw, pitch, turnSpeed, seconds);
     }
 
     public boolean manualInput() {
@@ -133,6 +162,7 @@ public final class MiningPlayerControl {
         looking = false;
         movement = Input.EMPTY;
         clearAim();
+        varied.reset();
     }
 
     public void applyMovementInput() {

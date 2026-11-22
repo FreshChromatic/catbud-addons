@@ -1,0 +1,7 @@
+{
+  "required": true,
+  "package": "github.freshchromatic.catbud_addons.island_assistive.rhythm.mixin",
+  "compatibilityLevel": "JAVA_25",
+  "client": ["RhythmLookMixin", "RhythmTargetMixin", "RhythmRenderMixin", "RhythmAttackMixin"],
+  "injectors": {"defaultRequire": 1}
+}

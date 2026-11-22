@@ -21,7 +21,7 @@ public final class ReleaseHttpClient implements AutoCloseable {
 
     private volatile InputStream activeDownload;
 
-    public static final String API = "https://api.cbwp.workers.dev/addons/v1/";
+    public static final String API = "https://catnip-api.freshcc.workers.dev/addons/v1/";
 
     private final ReleaseTransport         transport;
     private final ScheduledExecutorService deadlines = Executors.newSingleThreadScheduledExecutor(work -> {

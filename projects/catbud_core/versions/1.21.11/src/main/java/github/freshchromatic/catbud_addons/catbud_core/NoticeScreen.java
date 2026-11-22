@@ -39,7 +39,7 @@ public final class NoticeScreen extends Screen {
         try {
             URI uri = URI.create(value);
             return uri.getScheme().equals("https") && uri.getUserInfo() == null && uri.getPort() == -1 && List.of(
-                "github.com", "catbud.net", "catrealm.net", "api.cbwp.workers.dev").contains(uri.getHost());
+                "github.com", "catbud.net", "catrealm.net", "catnip-api.freshcc.workers.dev").contains(uri.getHost());
         } catch (RuntimeException error) {
             return false;
         }

@@ -33,7 +33,9 @@ public final class IslandAssistiveSettings {
         schema.add(Setting.toggle("miningMovement", "mining", true, values -> true));
         schema.add(Setting.number("miningRadius", "mining", 0.5, 0.125, 1, 0.125, values -> values.bool(
             "miningMovement")));
-        schema.add(Setting.number("miningTurnSpeed", "mining", 180, 30, 360, 15, values -> true));
+        schema.add(Setting.toggle("miningVariedMotion", "mining", true, values -> true));
+        schema.add(Setting.number("miningTurnSpeed", "mining", 180, 30, 360, 15, values -> !values.bool(
+            "miningVariedMotion")));
         schema.add(Setting.toggle("miningCooldown", "mining", true, values -> true));
         schema.add(Setting.toggle("miningPauseInventory", "mining", true, values -> true));
         schema.add(Setting.toggle("miningPauseScreens", "mining", false, values -> true));
@@ -48,8 +50,10 @@ public final class IslandAssistiveSettings {
     }
 
     private void apply(SettingsValues values) {
-        mining.configure(values.bool("miningMovement"), values.number("miningRadius"), values.number("miningTurnSpeed"),
-            values.bool("miningCooldown"));
+        boolean varied = values.bool("miningVariedMotion");
+        mining.turnMode(varied ? MiningTurnMode.VARIED : MiningTurnMode.SMOOTH);
+        mining.configure(values.bool("miningMovement"), values.number("miningRadius"), varied ? 180
+            : values.number("miningTurnSpeed"), values.bool("miningCooldown"));
         mining.interruptions(new MiningInterruptionPolicy(values.bool("miningPauseInventory"), values.bool(
             "miningPauseScreens"), values.bool("miningPauseUsingItem"), values.bool("miningPauseUnfocused")));
         sound.volume((float) values.number("volume"));

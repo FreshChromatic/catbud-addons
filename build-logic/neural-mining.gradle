@@ -1,0 +1,54 @@
+if (project.hasProperty('miningStudy') || project.hasProperty('verifyRhythm')) {
+    throw new GradleException('Neural mining uses a separate client from motion studies.')
+}
+
+sourceSets {
+    neuralMining {
+        java.srcDirs = [file('../../shared/src/neuralMining/java')]
+        resources.srcDirs = [file('../../shared/src/neuralMining/resources')]
+        compileClasspath += sourceSets.main.output + sourceSets.main.compileClasspath
+        runtimeClasspath += sourceSets.main.output + sourceSets.main.runtimeClasspath
+    }
+}
+configurations.neuralMiningImplementation.extendsFrom(configurations.implementation)
+configurations.neuralMiningRuntimeOnly.extendsFrom(configurations.runtimeOnly)
+configurations.create('neuralRuntimeBundle')
+dependencies {
+    neuralMiningImplementation 'com.microsoft.onnxruntime:onnxruntime:1.23.2'
+    neuralRuntimeBundle 'com.microsoft.onnxruntime:onnxruntime:1.23.2'
+}
+
+tasks.register('neuralMiningJar', Jar) {
+    dependsOn tasks.named('neuralMiningClasses')
+    from sourceSets.neuralMining.output
+    from({ configurations.neuralRuntimeBundle.collect { zipTree(it) } }) {
+        exclude 'META-INF/MANIFEST.MF', 'META-INF/*.SF', 'META-INF/*.RSA', 'META-INF/*.DSA'
+    }
+    duplicatesStrategy = DuplicatesStrategy.FAIL
+    archiveFileName = 'catbud-neural-mining-26.3-research.jar'
+    destinationDirectory = layout.buildDirectory.dir('neural-mining')
+}
+
+loom {
+    mods {
+        catbud_island_assistive { sourceSet sourceSets.main }
+        catbud_neural_mining { sourceSet sourceSets.neuralMining }
+    }
+    runs {
+        client {
+            source sourceSets.neuralMining
+            runDir 'build/verification-neural-mining'
+            vmArg '-Xmx2G'
+            if (project.hasProperty('verifyNeuralCorrection')) {
+                vmArg '-Dcatbud.neural.verifyCorrection=true'
+            }
+            ['neuralModel': 'model', 'neuralMetadata': 'metadata', 'neuralOutput': 'output'].each { property, key ->
+                if (project.hasProperty(property)) {
+                    vmArg "-Dcatbud.neural.${key}=${rootProject.file(project.property(property)).absolutePath}"
+                }
+            }
+            programArgs '--width', '960', '--height', '540', '--username', 'NeuralVerifier'
+        }
+    }
+}
+tasks.named('runClient') { dependsOn tasks.named('neuralMiningClasses') }

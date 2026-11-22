@@ -77,7 +77,7 @@ public final class InstallerMain {
     }
 
     private static void requireApproval(InstallationPlan plan) throws IOException, InterruptedException {
-        URI uri = URI.create("https://api.cbwp.workers.dev/addons/v1/catalog?minecraft=" + plan.minecraft()
+        URI uri = URI.create("https://catnip-api.freshcc.workers.dev/addons/v1/catalog?minecraft=" + plan.minecraft()
             + "&channel=stable");
         var http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build();
         var request = HttpRequest.newBuilder(uri).timeout(Duration.ofSeconds(15)).header("Cache-Control", "no-cache")

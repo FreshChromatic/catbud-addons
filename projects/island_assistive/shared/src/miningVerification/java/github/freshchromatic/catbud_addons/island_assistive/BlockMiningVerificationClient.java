@@ -202,9 +202,13 @@ public final class BlockMiningVerificationClient implements ClientModInitializer
                 next(4);
             }
             case 4 -> {
+                if (ticks == 1) {
+                    recordAim(client);
+                }
                 if (ticks > 160) {
-                    throw new AssertionError("Face " + Direction.values()[direction] + " not mined: " + session.status()
-                        .getString());
+                    recordAim(client);
+                    throw new AssertionError("Face " + Direction.values()[direction % 6] + " not mined: " + session
+                        .status().getString());
                 }
                 if (!client.level.getBlockState(target).isAir()) {
                     return;
@@ -212,9 +216,9 @@ public final class BlockMiningVerificationClient implements ClientModInitializer
                 if (!serverConfirmsAir(client)) {
                     return;
                 }
-                results.add("PASS: server confirms face=" + Direction.values()[direction] + " ticks=" + ticks);
-                if (++direction < 6) {
-                    block(client, vein(Direction.values()[direction]));
+                results.add("PASS: server confirms face=" + Direction.values()[direction % 6] + " ticks=" + ticks);
+                if (++direction < 18) {
+                    block(client, vein(Direction.values()[direction % 6]));
                     next(5);
                 } else {
                     session.stop();
@@ -542,9 +546,99 @@ public final class BlockMiningVerificationClient implements ClientModInitializer
                 results.add("PASS: temporary full occlusion recovers without manual restart");
                 session.stop();
                 block(client, Blocks.STONE.defaultBlockState());
+                next(31);
+            }
+            case 31 -> {
+                if (ticks < 8) {
+                    return;
+                }
+                session.start();
+                session.turnMode(MiningTurnMode.SMOOTH);
+                check(session.state() == BlockMiningSession.State.STOPPED && !client.options.keyAttack.isDown()
+                    && !client.options.keyShift.isDown(), "Changing turning mode stops and releases mining");
+                session.configure(true, 1, 135, true);
+                session.start();
+                next(32);
+            }
+            case 32 -> {
+                check(ticks < 220, "Original turning mode timeout: " + session.status().getString());
+                if (!client.level.getBlockState(target).isAir() || !serverConfirmsAir(client)) {
+                    return;
+                }
+                results.add("PASS: original turning mode mines with a custom speed after switching");
+                session.turnMode(MiningTurnMode.VARIED);
+                check(session.state() == BlockMiningSession.State.STOPPED && !client.options.keyAttack.isDown(),
+                    "Switching back to VARIED stops the previous mode");
+                session.configure(true, 1, 180, true);
+                block(client, vein(Direction.UP));
+                next(33);
+            }
+            case 33 -> {
+                if (ticks < 8) {
+                    return;
+                }
+                session.interruptions(new MiningInterruptionPolicy(true, true, false, false));
+                session.start();
+                ClientPlatform.show(client, new net.minecraft.client.gui.screens.PauseScreen(true));
+                next(34);
+            }
+            case 34 -> {
+                check(session.state() == BlockMiningSession.State.SUSPENDED && !client.options.keyAttack.isDown(),
+                    "VARIED suspension releases mining");
+                ClientPlatform.show(client, null);
+                client.mouseHandler.grabMouse();
+                next(35);
+            }
+            case 35 -> {
+                check(ticks < 220, "VARIED automatic resume timeout: " + session.status().getString());
+                if (!client.level.getBlockState(target).isAir() || !serverConfirmsAir(client)) {
+                    return;
+                }
+                results.add("PASS: VARIED resumes after a screen closes without a new start command");
+                session.interruptions(MiningInterruptionPolicy.DEFAULT);
+                session.stop();
+                block(client, Blocks.STONE.defaultBlockState());
                 next(22);
             }
             default -> throw new AssertionError("Unexpected stage");
+        }
+    }
+
+    private void recordAim(Minecraft client) throws ReflectiveOperationException {
+        var controlField = BlockMiningSession.class.getDeclaredField("control");
+        controlField.setAccessible(true);
+        var variedField = MiningPlayerControl.class.getDeclaredField("varied");
+        variedField.setAccessible(true);
+        var motionField = MiningAimController.class.getDeclaredField("motion");
+        motionField.setAccessible(true);
+        var motion = (VariedAimMotion) motionField.get(variedField.get(controlField.get(session)));
+        var planner = new MiningAimPlanner();
+        var eye = client.player.getEyePosition();
+        var reference = planner.find(client, target, eye, null);
+        if (reference != null) {
+            var shape = client.level.getBlockState(target).getShape(client.level, target);
+            var boxes = shape.toAabbs().stream().map(box -> new AimTargetTransfer.Box(new AimTrajectory.Vector(target
+                .getX() + box.minX, target.getY() + box.minY, target.getZ() + box.minZ), new AimTrajectory.Vector(target
+                    .getX() + box.maxX, target.getY() + box.maxY, target.getZ() + box.maxZ))).toList();
+            var context = new AimTrajectory.Context("mining", "side_thin", new AimTrajectory.Vector(eye.x, eye.y,
+                eye.z), new AimTrajectory.Rotation(client.player.getYRot(), client.player.getXRot()),
+                new AimTrajectory.Vector(reference.x, reference.y, reference.z));
+            var library = MiningMotionLibrary.instance();
+            var options = new AimSourceSampler(0, library.profiles(), library.targets()).compatible(context, boxes,
+                client.player.blockInteractionRange());
+            var hidden = options.stream().filter(option -> !planner.visible(client, target, eye, new Vec3(option.goal()
+                .x(), option.goal().y(), option.goal().z()))).toList();
+            results.add("POOL: face=" + Direction.values()[direction % 6] + " options=" + options.size() + " hidden="
+                + hidden.size() + " goals=" + hidden.stream().map(AimSourceSampler.Option::goal).toList());
+        }
+        results.add("AIM: eye=" + client.player.getEyePosition() + " yaw=" + client.player.getYRot() + " pitch="
+            + client.player.getXRot() + " hit=" + planner.bodyHit(client) + " reference=" + planner.find(client, target,
+                client.player.getEyePosition(), null));
+        if (motion != null) {
+            results.add("MOTION: state=" + motion.state() + " plans=" + motion.plans() + " canAttack=" + motion
+                .canAttack() + " rotation=" + motion.tracker().rotation() + " goal=" + (motion.lastDecision() == null
+                    ? null
+                    : motion.lastDecision().goal()));
         }
     }
 

@@ -1,0 +1,102 @@
+import groovy.json.JsonOutput
+import groovy.json.JsonSlurper
+import java.security.MessageDigest
+
+def studyResources = layout.buildDirectory.dir('generated/mining-study-resources')
+tasks.register('generateMiningStudyModel') {
+    outputs.dir studyResources
+    outputs.upToDateWhen { false }
+    doLast {
+        def freezeFile = rootProject.file('projects/mining_capture/reports/motion-timing-2026-11-02/integration-freeze.json')
+        def freeze = new JsonSlurper().parse(freezeFile)
+        [freeze.code_sha256, freeze.input_sha256].each { group ->
+            group.each { name, expected ->
+                def actual = MessageDigest.getInstance('SHA-256').digest(rootProject.file(name).bytes).encodeHex().toString()
+                if (actual != expected) {
+                    throw new GradleException("Frozen study input changed: ${name}")
+                }
+            }
+        }
+        def input = new JsonSlurper().parse(rootProject.file(
+            'projects/mining_capture/reports/motion-timing-2026-11-02/game-integration-input.json'))
+        def directory = studyResources.get().asFile
+        directory.mkdirs()
+        def runtimeFiles = files(
+            fileTree(rootProject.file('projects/island_assistive/shared/src/miningStudy')) {
+                include '**/*.java', '**/*.json'
+            },
+            fileTree(rootProject.file('projects/mining_capture/study-protocol/src/main/java')) {
+                include '**/*.java'
+            }, rootProject.file('build-logic/mining-study.gradle'))
+        def runtimeHashes = new TreeMap<String, String>()
+        runtimeFiles.each { source ->
+            runtimeHashes[rootProject.relativePath(source).replace('\\', '/')] =
+                MessageDigest.getInstance('SHA-256').digest(source.bytes).encodeHex().toString()
+        }
+        def modelFreeze = MessageDigest.getInstance('SHA-256').digest(freezeFile.bytes).encodeHex().toString()
+        def buildRecord = [modelFreeze: modelFreeze, runtimeSources: runtimeHashes]
+        def buildIdentity = MessageDigest.getInstance('SHA-256').digest(
+            JsonOutput.toJson(buildRecord).getBytes('UTF-8')).encodeHex().toString()
+        new File(directory, 'mining-study-build.json').text = JsonOutput.toJson(buildRecord + [identity: buildIdentity])
+        new File(directory, 'mining-study-model.json').text = JsonOutput.toJson([
+            profiles: input.profiles, targets: input.targets,
+            freeze: modelFreeze, build: buildIdentity
+        ])
+    }
+}
+sourceSets {
+    miningStudy {
+        java.srcDirs = [file('../../shared/src/miningStudy/java'), file('../../shared/src/rhythmVerification/java'),
+            rootProject.file('projects/mining_capture/study-protocol/src/main/java')]
+        java.exclude '**/RhythmGameVerification.java', '**/RhythmGameData.java', '**/*Parity.java', '**/rhythm/mixin/**'
+        resources.srcDirs = [file('../../shared/src/miningStudy/resources'), studyResources]
+        compileClasspath += sourceSets.main.output + sourceSets.main.compileClasspath
+        runtimeClasspath += sourceSets.main.output + sourceSets.main.runtimeClasspath
+    }
+}
+configurations.miningStudyImplementation.extendsFrom(configurations.implementation)
+configurations.miningStudyRuntimeOnly.extendsFrom(configurations.runtimeOnly)
+tasks.named('processMiningStudyResources') { dependsOn tasks.named('generateMiningStudyModel') }
+tasks.register('miningStudyJar', Jar) {
+    dependsOn tasks.named('miningStudyClasses')
+    from sourceSets.miningStudy.output
+    archiveFileName = 'catbud-island-motion-study-26.3-1.1.0.jar'
+    destinationDirectory = rootProject.layout.projectDirectory.dir('out/study')
+}
+loom {
+    mods {
+        catbud_island_assistive { sourceSet sourceSets.main }
+        if (!project.hasProperty('packagedStudy')) {
+            catbud_mining_study { sourceSet sourceSets.miningStudy }
+        }
+    }
+    runs {
+        client {
+            source project.hasProperty('packagedStudy') ? sourceSets.main : sourceSets.miningStudy
+            runDir project.hasProperty('packagedStudy') ? 'build/study-packaged-client' : 'build/study-client'
+            vmArg '-Xmx2G'
+            vmArg "-Dcatbud.study.output=${rootProject.file(project.findProperty('studyOutput') ?: 'projects/mining_capture/reports/motion-variation-2026-11-02/runtime/client').absolutePath}"
+            if (project.hasProperty('studySeed')) {
+                vmArg "-Dcatbud.study.seed=${project.property('studySeed')}"
+            }
+            if (project.hasProperty('studyServer')) {
+                vmArg "-Dcatbud.study.server=${project.property('studyServer')}"
+                vmArg "-Dcatbud.study.ticks=${project.findProperty('studyTicks') ?: '12000'}"
+            }
+            programArgs '--width', '960', '--height', '540', '--username', 'StudyVerifier'
+        }
+    }
+}
+tasks.named('runClient') { dependsOn tasks.named('miningStudyClasses') }
+if (project.hasProperty('packagedStudy')) {
+    tasks.named('runClient') {
+        dependsOn tasks.named('miningStudyJar')
+        doFirst {
+            delete file('build/study-packaged-client/mods/catbud-island-motion-study-26.3-1.0.0.jar')
+            copy {
+                from tasks.named('miningStudyJar').flatMap { it.archiveFile }
+                into file('build/study-packaged-client/mods')
+            }
+        }
+    }
+}

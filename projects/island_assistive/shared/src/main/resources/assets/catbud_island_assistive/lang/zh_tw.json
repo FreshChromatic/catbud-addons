@@ -54,6 +54,8 @@
   "setting.island_assistive.miningMovement.description": "原地無法命中時，僅在有支撐的附近地面微移。",
   "setting.island_assistive.miningRadius": "微移最大距離",
   "setting.island_assistive.miningRadius.description": "以每次啟動時的站位為中心，單位為格。",
+  "setting.island_assistive.miningVariedMotion": "多樣轉向（VARIED）",
+  "setting.island_assistive.miningVariedMotion.description": "依目前方塊與真人節奏選擇瞄準動作，使用每秒 180 度。切換模式會停止目前挖掘；關閉後可調整原轉向速度。",
   "setting.island_assistive.miningTurnSpeed": "轉向速度",
   "setting.island_assistive.miningTurnSpeed.description": "每秒最大轉向角度，接近落點時減速。",
   "setting.island_assistive.miningCooldown": "開始挖掘前等待攻擊冷卻",

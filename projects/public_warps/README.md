@@ -9,7 +9,7 @@
 新安裝預設使用正式雲端，不需要啟動 Node 服務：
 
 ```json
-{"serviceUrl":"https://api.cbwp.workers.dev","protocol":"cloud","traceTeleport":false}
+{"serviceUrl":"https://catnip-api.freshcc.workers.dev","protocol":"cloud","traceTeleport":false}
 ```
 
 已有設定不會自動覆寫；更新後可修改 `config/catbud/public-warps-service.json` 並重新啟動遊戲。沒有投稿憑證仍可下載共享名單，記錄自己的補全、次數與預覽；投稿需管理者發放個別 `contributorCredential`。管理與審核方式見 [雲端服務說明](../../services/public-warps-cloud/README.md)。
@@ -64,7 +64,7 @@ Workers＋D1 已部署；四個版本已完成合成快照的實際啟動、搜�
 
 共用投稿顯示實際結果：已發布、待審核、只保留本機、拒絕或過期；一般投稿不會因 HTTP 202 就標成已發布。等待審核的狀態每小時更新。重新啟動保留待上傳資料及投稿 ID；切換伺服器後，舊請求仍限制在原伺服器。管理者私人可信憑證可自動發布有效觀察與合規預覽，一般個別憑證進入網頁審核；公開 JAR 不包含任何寫入或管理憑證。
 
-兩服新版接口已部署，Access 管理網頁已完成管理者登入與儲存驗收。管理入口為 https://control.cbwp.workers.dev ，詳細交付證據見 IMPLEMENTATION.md 的最新紀錄。
+兩服新版接口已部署，Access 管理網頁已完成管理者登入與儲存驗收。管理入口為 https://catnip-control.freshcc.workers.dev ，詳細交付證據見 IMPLEMENTATION.md 的最新紀錄。
 
 四個支援版本已加入不透明方塊的可重用頂點資料與分批上傳；縮圖與右側預覽共用同一份資料。頂點快取在幀結束按 128 MiB／64 場景回收，單一超額場景暫留，未完成上傳與遊戲共用索引不計入此預算。透明方塊及實體仍使用原本流程；首次載入、自訂模型與長時間互動效能仍待更完整驗收。
 

@@ -1,5 +1,5 @@
 {
-  "name": "control",
+  "name": "catnip-control",
   "main": "src/management-worker.mjs",
   "compatibility_date": "2026-10-11",
   "compatibility_flags": ["nodejs_compat"],

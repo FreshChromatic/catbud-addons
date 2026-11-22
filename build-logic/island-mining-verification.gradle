@@ -1,7 +1,8 @@
 sourceSets {
     miningVerification {
-        java.srcDirs = [file('../../shared/src/miningVerification/java'), file('src/verification/java')]
-        resources.srcDir file('../../shared/src/miningVerification/resources')
+        def verificationSources = project.hasProperty('verifyRhythm') ? 'rhythmVerification' : 'miningVerification'
+        java.srcDirs = [file("../../shared/src/${verificationSources}/java"), file('src/verification/java')]
+        resources.srcDir file("../../shared/src/${verificationSources}/resources")
         compileClasspath += sourceSets.main.output + sourceSets.main.compileClasspath
         runtimeClasspath += sourceSets.main.output + sourceSets.main.runtimeClasspath
     }
@@ -25,7 +26,7 @@ if (project.hasProperty('miningMap')) {
             }
             copy {
                 from original
-                into layout.buildDirectory.dir("verification-island-mining/saves/${miningMapName}")
+                into layout.buildDirectory.dir("${project.hasProperty('verifyRhythm') ? 'verification-rhythm' : 'verification-island-mining'}/saves/${miningMapName}")
                 exclude 'session.lock'
             }
         }
@@ -40,6 +41,13 @@ loom {
         client {
             source sourceSets.miningVerification
             runDir 'build/verification-island-mining'
+            if (project.hasProperty('verifyRhythm')) {
+                runDir 'build/verification-rhythm'
+                vmArg '-Dcatbud.verifyRhythm=true'
+                vmArg "-Dcatbud.rhythm.input=${rootProject.file(project.property('rhythmInput')).absolutePath}"
+                vmArg "-Dcatbud.rhythm.output=${rootProject.file(project.property('rhythmOutput')).absolutePath}"
+                programArgs '--width', '960', '--height', '540', '--username', 'RhythmVerifier'
+            }
             if (project.hasProperty('tweakerooTestMods')) {
                 vmArg '-Dcatbud.verifyFreeCamera=true'
             }

@@ -141,7 +141,7 @@ public final class PublicWarpsClient implements ClientModInitializer {
             if (!Files.exists(settingsFile)) {
                 Files.createDirectories(settingsFile.getParent());
                 Files.writeString(settingsFile,
-                    "{\"serviceUrl\":\"https://api.cbwp.workers.dev\",\"protocol\":\"cloud\",\"traceTeleport\":false}\n");
+                    "{\"serviceUrl\":\"https://catnip-api.freshcc.workers.dev\",\"protocol\":\"cloud\",\"traceTeleport\":false}\n");
             }
             var settings = JsonParser.parseString(Files.readString(settingsFile)).getAsJsonObject();
             cloudService = settings.has("protocol") && "cloud".equals(settings.get("protocol").getAsString());

@@ -17,11 +17,11 @@
 
 ## 正式雲端
 
-正式服務位址：https://api.cbwp.workers.dev
+正式服務位址：https://catnip-api.freshcc.workers.dev
 
 `wrangler.jsonc` 已綁定正式 D1；一般個別投稿需審核，私人 trusted 投稿通過資格與有效觀察檢查後自動發布。CLI 管理員憑證保存在本機 `.local-state/cloud/administrator.json`，Worker 使用 `ADMIN_CREDENTIAL` secret，不能與投稿憑證混用。以上私人檔案均不提交 Git。
 
-網頁管理位址：https://control.cbwp.workers.dev 。Access 登入與登入後儲存已由管理者實際確認。「待審核」比較候選後批准／拒絕；「已發布」修改用途、下架或回退仍保留的上一版；「投稿者」授權或撤權；「操作紀錄」查管理變更。私人可信投稿正常時不需逐筆人工批准。
+網頁管理位址：https://catnip-control.freshcc.workers.dev 。Access 登入與登入後儲存已由管理者實際確認。「待審核」比較候選後批准／拒絕；「已發布」修改用途、下架或回退仍保留的上一版；「投稿者」授權或撤權；「操作紀錄」查管理變更。私人可信投稿正常時不需逐筆人工批准。
 
 桌面管理清單與右側詳情各自捲動，選取後詳情從頂部顯示；窄螢幕選取後跳至詳情。每頁 25 筆，提供上一頁／下一頁與符合搜尋的總數，搜尋作用於整份該服清單，包含玩家 ID、自訂名稱及用途。頁面標題保留玩家 ID，自訂名稱另列。
 

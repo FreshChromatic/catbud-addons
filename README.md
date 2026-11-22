@@ -2,6 +2,10 @@
 
 有一點點好用的貓芽附加模組
 
+[真人挖掘採集工具](projects/mining_capture/README.md)：Paper 單格方塊場景，搭配 26.2／26.3 Fabric 模組收集手動操作資料。
+
+[真人轉向第三輪個人研究](projects/mining_capture/reports/timed-review-2026-11-02/REPORT.md)已完成：較快候選比舊合併縮短約 20.7% 瞄準耗時，同輪自然度平均 5.00／4.67 分；仍保留為研究候選，未替換玩家版。
+
 新增[空島輔助模組](projects/island_assistive/README.md)：預設關閉的附近生物提醒，預設偵測 256 格內的殭屍村民；新發現目標每 5 秒播放音效，直到點擊聊天室停止。
 
 新增[怪物浪潮模組](projects/monster_wave/README.md)：沿用魔幻之塔的入場偵測，提供低血量與扣血預警斷線保護，支援重加入後恢復保護；已停用副本事件檔案紀錄。
@@ -50,10 +54,10 @@ catbud-addons/
 .\gradlew.bat :projects:magic_tower:26.1.2:assemble
 ```
 
-`assemble` 會打包全部二十種「模組 × 版本」組合，但不會執行測試或啟動客戶端。單一模組版本可用 `./gradlew.bat :projects:island_assistive:26.2:assemble` 打包。
+`assemble` 會打包原有二十種「模組 × 版本」組合，以及真人採集的 Paper 插件與兩個客戶端版本，但不會執行測試或啟動客戶端。單一模組版本可用 `./gradlew.bat :projects:island_assistive:26.2:assemble` 打包。
 
 `releaseJars` 會將四個版本的 Core、Magic Tower、公共傳點、怪物浪潮與空島輔助可安裝 JAR 輸出至 `out/`。
-Magic Tower、公共傳點、怪物浪潮與空島輔助 JAR 不內嵌 Core。玩家須另外安裝一份相同 Minecraft 版本的 Core，供所有附加模組共用。全部模組版本為 **1.0.2**。
+Magic Tower、公共傳點、怪物浪潮與空島輔助 JAR 不內嵌 Core。玩家須另外安裝一份相同 Minecraft 版本的 Core，供這些附加模組共用。原有模組版本為 **1.0.2**；獨立真人採集的 Paper 插件為 **1.1.0**、客戶端為 **1.0.0**，不需要 Core。
 
 26.1.2 的產物為：
 
